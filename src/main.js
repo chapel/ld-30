@@ -28,13 +28,6 @@ function Test() {
     y: 50,
     size: utils.random(10, 20)
   }));
-  this.planet3 = this.addChild(new Planet({
-    type: 'normal',
-    visible: true,
-    x: 50,
-    y: 100,
-    size: utils.random(10, 20)
-  }));
 
   this.menu = this.addChild(new Menu({
     title: 'Test',
@@ -61,5 +54,6 @@ game.render();
 
 test.ctx.onclick = function (e) {
   test.planet.move(e.x, e.y, 80);
-  test.planet.resize(test.planet.size + 5);
+  test.planet2.move(e.x, e.y, 80);
+  //test.planet.resize(test.planet.size + 5);
 };

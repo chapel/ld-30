@@ -1,5 +1,6 @@
 'use strict';
 
+var ctx = require('./ctx');
 var utils = require('./utils');
 
 function Game() {
@@ -33,8 +34,12 @@ Game.prototype.render = function (time) {
     return;
   }
 
+  ctx.autoCommit(false);
   this.screen.clear();
   this.screen.render(this.delta);
+  ctx
+    .commit()
+    .autoCommit(true);
 
   // Kick off new Request Animation Frame
   this.raf();

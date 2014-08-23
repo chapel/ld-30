@@ -40,12 +40,8 @@ Planet.prototype.render = function (delta) {
     this.incrementalResize();
   }
 
-  ctx.autoCommit(false);
   this.renderObject();
   this.renderText();
-  ctx
-    .commit()
-    .autoCommit(false);
 };
 
 Planet.prototype.renderObject = function () {

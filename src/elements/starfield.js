@@ -37,13 +37,9 @@ function Field(count) {
 }
 
 Field.prototype.render = function () {
-  ctx.autoCommit(false);
   for (var i = 0; i < this.count; i += 1) {
     this.stars[i].render();
   }
-  ctx
-    .commit()
-    .autoCommit(true);
 };
 
 module.exports = Field;

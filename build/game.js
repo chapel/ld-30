@@ -29,13 +29,6 @@ function Test() {
     y: 50,
     size: utils.random(10, 20)
   }));
-  this.planet3 = this.addChild(new Planet({
-    type: 'normal',
-    visible: true,
-    x: 50,
-    y: 100,
-    size: utils.random(10, 20)
-  }));
 
   this.menu = this.addChild(new Menu({
     title: 'Test',
@@ -62,7 +55,8 @@ game.render();
 
 test.ctx.onclick = function (e) {
   test.planet.move(e.x, e.y, 80);
-  test.planet.resize(test.planet.size + 5);
+  test.planet2.move(e.x, e.y, 80);
+  //test.planet.resize(test.planet.size + 5);
 };
 
 },{"./colors":"/Users/jchapel/Projects/ld-30/src/colors.js","./elements/planet":"/Users/jchapel/Projects/ld-30/src/elements/planet.js","./elements/starfield":"/Users/jchapel/Projects/ld-30/src/elements/starfield.js","./game":"/Users/jchapel/Projects/ld-30/src/game.js","./menu":"/Users/jchapel/Projects/ld-30/src/menu.js","./screen":"/Users/jchapel/Projects/ld-30/src/screen.js","./utils":"/Users/jchapel/Projects/ld-30/src/utils.js","util":"/Users/jchapel/Projects/ld-30/node_modules/browserify/node_modules/util/util.js"}],"/Users/jchapel/Projects/ld-30/node_modules/browserify/node_modules/inherits/inherits_browser.js":[function(require,module,exports){
@@ -907,12 +901,8 @@ Planet.prototype.render = function (delta) {
     this.incrementalResize();
   }
 
-  ctx.autoCommit(false);
   this.renderObject();
   this.renderText();
-  ctx
-    .commit()
-    .autoCommit(false);
 };
 
 Planet.prototype.renderObject = function () {
@@ -1008,13 +998,9 @@ function Field(count) {
 }
 
 Field.prototype.render = function () {
-  ctx.autoCommit(false);
   for (var i = 0; i < this.count; i += 1) {
     this.stars[i].render();
   }
-  ctx
-    .commit()
-    .autoCommit(true);
 };
 
 module.exports = Field;
@@ -1022,6 +1008,7 @@ module.exports = Field;
 },{"../colors":"/Users/jchapel/Projects/ld-30/src/colors.js","../ctx":"/Users/jchapel/Projects/ld-30/src/ctx.js","../utils":"/Users/jchapel/Projects/ld-30/src/utils.js"}],"/Users/jchapel/Projects/ld-30/src/game.js":[function(require,module,exports){
 'use strict';
 
+var ctx = require('./ctx');
 var utils = require('./utils');
 
 function Game() {
@@ -1055,8 +1042,12 @@ Game.prototype.render = function (time) {
     return;
   }
 
+  ctx.autoCommit(false);
   this.screen.clear();
   this.screen.render(this.delta);
+  ctx
+    .commit()
+    .autoCommit(true);
 
   // Kick off new Request Animation Frame
   this.raf();
@@ -1068,7 +1059,7 @@ Game.prototype.raf = function () {
 
 module.exports = Game;
 
-},{"./utils":"/Users/jchapel/Projects/ld-30/src/utils.js"}],"/Users/jchapel/Projects/ld-30/src/menu.js":[function(require,module,exports){
+},{"./ctx":"/Users/jchapel/Projects/ld-30/src/ctx.js","./utils":"/Users/jchapel/Projects/ld-30/src/utils.js"}],"/Users/jchapel/Projects/ld-30/src/menu.js":[function(require,module,exports){
 'use strict';
 
 var ctx = require('./ctx');
