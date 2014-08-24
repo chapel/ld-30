@@ -29,6 +29,16 @@ module.exports = {
     var index = utils.random(min, max);
 
     return palette.getColor(index);
+  },
+  randomWithout: function randomWithout(without, min, max) {
+    var color = module.exports.random(min, max);
+    if (module.exports.equals(without, color)) {
+      return randomWithout(without, min, max);
+    }
+    return color;
+  },
+  equals: function (source, check) {
+    return source.toString() === check.toString();
   }
 };
 

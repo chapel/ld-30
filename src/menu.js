@@ -19,27 +19,63 @@ Group.prototype.visible = function (visible) {
   }
 };
 
-function Line(options, parent) {
+function Base(options, parent) {
   this.parent = parent;
+  this.visible = utils.isUndefined(options.visible) ? false : options.visible;
+}
+
+Base.prototype.createRelativePoint = function (x, y, parentPoint) {
+  return new utils.Point(x + parentPoint.x, y + parentPoint.y);
+};
+
+events.extendProto(Base.prototype);
+
+function Line(options, parent) {
+  Base.call(this, options, parent);
+
+  this.start = this.createRelativePoint(options.startX, options.startY, parent.startPosition);
+  this.end = this.createRelativePoint(options.endX, options.endY, parent.startPosition);
+  this.color = options.color;
+}
+
+util.inherits(Line, Base);
+
+Line.prototype.render = function () {
+  if (this.visible) {
+    ctx
+      .penColor(this.color)
+      .line(this.start.x, this.start.y, this.end.x, this.end.y);
+    utils.clearColors();
+  }
+};
+
+function Text(options, parent) {
+  Base.call(this, options, parent);
+
   this.text = '' + options.text;
   this.position = this.createRelativePoint(options.x, options.y, parent.startPosition);
   this.textColor = options.textColor;
   this.bgColor = options.bgColor;
-  this.visible = utils.isUndefined(options.visible) ? false : options.visible;
+  this.align = options.align;
 }
 
-Line.prototype.createRelativePoint = function (x, y, parentPoint) {
-  return new utils.Point(x + parentPoint.x, y + parentPoint.y);
-};
+util.inherits(Text, Base);
 
-Line.prototype.render = function () {
+Text.prototype.render = function () {
   if (this.visible) {
-    text(this.text, this.position.x, this.position.y, this.textColor, this.bgColor);
+    text({
+      text: this.text,
+      x: this.position.x,
+      y: this.position.y,
+      color: this.textColor,
+      bgColor: this.bgColor,
+      align: this.align
+    });
   }
 };
 
-function MenuOption(options) {
-  Line.call(this, options);
+function MenuOption(options, parent) {
+  Text.call(this, options, parent);
 
   var textMeasure = ctx.measureText(this.text);
   this.width = textMeasure.width;
@@ -60,9 +96,7 @@ function MenuOption(options) {
   }
 }
 
-events.extendProto(MenuOption.prototype);
-
-util.inherits(MenuOption, Line);
+util.inherits(MenuOption, Text);
 
 function Menu(options) {
   this.title = options.title;
@@ -93,7 +127,12 @@ Menu.prototype.renderBox = function () {
 
 Menu.prototype.renderTitle = function () {
   if (this.title) {
-    text(this.title, this.startPosition.x + 5, this.startPosition.y + 5, this.textColor, null);
+    text({
+      text: this.title,
+      x: this.startPosition.x + 5,
+      y: this.startPosition.y + 5,
+      color: this.textColor
+    });
   }
 };
 
@@ -103,10 +142,16 @@ Menu.prototype.renderChildren = function () {
   }
 };
 
-Menu.prototype.addText = function (options) {
+Menu.prototype.addLine = function (options) {
   var line = new Line(options, this);
   this.children.push(line);
   return line;
+};
+
+Menu.prototype.addText = function (options) {
+  var textLine = new Text(options, this);
+  this.children.push(textLine);
+  return textLine;
 };
 
 Menu.prototype.addMenuOption = function (options) {
@@ -124,6 +169,7 @@ Menu.prototype.createGroup = function (name, items) {
 };
 
 Menu.Line = Line;
+Menu.Text = Text;
 Menu.MenuOption = MenuOption;
 
 module.exports = Menu;

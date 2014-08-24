@@ -5,8 +5,9 @@ var colors = require('../colors');
 
 var Starfield = require('../elements/starfield');
 var Planet = require('../elements/planet');
+var FlavorText = require('./planet-flavor-text');
+var TradeMenu = require('./planet-trade-menu');
 var Menu = require('../menu');
-var utils = require('../utils');
 
 exports.createScreen = function () {
 
@@ -16,7 +17,7 @@ exports.createScreen = function () {
 
   screen.field = screen.addChild(new Starfield(200));
 
-  screen.selectedPlanet = screen.addChild(new Planet({
+  screen.planet = screen.addChild(new Planet({
     visible: true,
     x: 95,
     y: 100,
@@ -24,105 +25,57 @@ exports.createScreen = function () {
     showName: false
   }));
 
+  var primary = screen.planet.color.fill || colors.orange;
+  var secondary = screen.planet.color.outline || colors.sage;
+
+  var bottom = 165;
+
   screen.menu = screen.addChild(new Menu({
-    title: 'Planet ' + screen.selectedPlanet.name,
+    title: 'Planet ' + screen.planet.name,
     x: 190,
     y: 10,
     width: 120,
     height: 180,
-    textColor: colors.white,
+    textColor: primary,
     bgColor: colors.black,
-    borderColor: colors.white
+    borderColor: secondary
   }));
 
-  screen.flavorText = screen.menu.createGroup('flavorText', [
-    screen.menu.addText({
-      text: 'Diameter',
-      x: 5,
-      y: 20,
-      textColor: colors.grey
-    }),
-    screen.menu.addText({
-      text: utils.formatMeters(screen.selectedPlanet.diameter),
-      x: 5,
-      y: 30,
-      textColor: colors.white
-    }),
-    screen.menu.addText({
-      text: 'Population',
-      x: 5,
-      y: 40,
-      textColor: colors.grey
-    }),
-    screen.menu.addText({
-      text: utils.formatNumber(screen.selectedPlanet.population),
-      x: 5,
-      y: 50,
-      textColor: colors.white
-    }),
-    screen.menu.addText({
-      text: 'Main Export',
-      x: 5,
-      y: 60,
-      textColor: colors.grey
-    }),
-    screen.menu.addText({
-      text: screen.selectedPlanet.mainExport.name,
-      x: 5,
-      y: 70,
-      textColor: colors.white
-    }),
-    screen.menu.addText({
-      text: 'Main Import',
-      x: 5,
-      y: 80,
-      textColor: colors.grey
-    }),
-    screen.menu.addText({
-      text: screen.selectedPlanet.mainImport.name,
-      x: 5,
-      y: 90,
-      textColor: colors.white
-    })
-  ]);
+  screen.flavorText = new FlavorText({
+    screen: screen,
+    primary: primary,
+    secondary: secondary,
+    bottom: bottom,
+    onClickTrade: function () {
+      this.toggle(false);
+      screen.tradeMenu.toggle(true);
+    },
+    onClickLeave: function () {
+    }
+  });
 
-  screen.flavorText.visible(true);
+  screen.tradeMenu = new TradeMenu({
+    screen: screen,
+    primary: primary,
+    secondary: secondary,
+    bottom: bottom,
+    onClickBack: function () {
+      this.toggle(false);
+      screen.flavorText.toggle(true);
+    }
+  });
 
+  screen.flavorText.create();
+  screen.tradeMenu.create();
 
-  /*
-    this.menu = this.addChild(new Menu({
-      title: 'Test',
-      x: 100,
-      y: 10,
-      width: 100,
-      height: 150,
-      textColor: colors.white,
-      bgColor: colors.black,
-      borderColor: colors.white
-    }));
+  screen.onInit(function () {
+    screen.flavorText.toggle(true);
+  });
 
-    var foo = this.menu.addMenuOption({
-      text: 'Foo',
-      x: 105,
-      y: 30,
-      textColor: colors.white,
-      bgHoverColor: colors.green,
-      onClick: function () {
-        alert('foo');
-      }
-    });
-
-
-    var bar = this.menu.addMenuOption({
-      text: 'Bar',
-      x: 105,
-      y: 40,
-      textColor: colors.white,
-      bgHoverColor: colors.purple
-    });
-
-    this.ctx.bgColor(colors.black);
-    */
+  screen.onRemove(function () {
+    screen.flavorText.toggle(false);
+    screen.tradeMenu.toggle(false);
+  });
 
   return screen;
 };

@@ -14,15 +14,28 @@ function Screen(options) {
     this._onRender = function () {};
   }
 
+  if (options.onInit) {
+    this.onInit(options.onInit);
+  } else {
+    this.init = function () {};
+  }
+
+  if (options.onRemove) {
+    this.onRemove(options.onRemove);
+  } else {
+    this.remove = function () {};
+  }
+
   this.ctx = ctx;
   this.children = [];
 }
 
-Screen.prototype.init = function () {
-  this.dirty(true);
+Screen.prototype.onInit = function (init, context) {
+  this.init = utils.bind(context || this, init);
 };
 
-Screen.prototype.remove = function () {
+Screen.prototype.onRemove = function (remove, context) {
+  this.remove = utils.bind(context || this, remove);
 };
 
 Screen.prototype.onRender = function (onRender, context) {
@@ -34,21 +47,14 @@ Screen.prototype.dirty = function (isDirty) {
 };
 
 Screen.prototype.clear = function () {
-  if (!this.isDirty) {
-    return;
-  }
   this.ctx.clear();
 };
 
 Screen.prototype.render = function (delta) {
-  if (!this.isDirty) {
-    return;
-  }
   this._onRender(delta);
   for (var i = 0; i < this.childLength; i += 1) {
     this.children[i].render(delta);
   }
-  //this.dirty(false);
 };
 
 Screen.prototype.addChild = function (child) {

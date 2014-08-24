@@ -19,9 +19,10 @@ function Planet(options) {
 
   this.type = options.type;
   this.size = options.size;
+  var fill = colors.random(1);
   this.color = {
-    outline: colors.random(1),
-    fill: colors.random(1)
+    outline: colors.randomWithout(fill, 1),
+    fill: fill
   };
 
   this.calculateBounds();
@@ -32,6 +33,8 @@ function Planet(options) {
 
   this.mainExport = this.getRandomResource();
   this.mainImport = this.getRandomResource(this.mainExport);
+
+  this.randomizeResourceAmounts();
 
   this.diameter = Math.floor(Math.random() * 1e5) + 2e4;
   this.population = Math.floor(this.diameter * (Math.random() * 1e5)) + 1e9;
@@ -67,6 +70,22 @@ Planet.prototype.getRandomResource = function (resource) {
   }
 };
 
+Planet.prototype.randomizeResourceAmounts = function () {
+  var keys = Object.keys(this.resources);
+  var resource;
+  for (var i = 0, len = keys.length; i < len; i += 1) {
+    resource = this.resources[keys[i]];
+    if (resource === this.mainExport) {
+      resource.amount = utils.random(utils.random(11, 100), utils.random(414, 602));
+    } else if (resource === this.mainImport) {
+      resource.amount = utils.random(utils.random(0, 14), utils.random(78, 109));
+    } else {
+      resource.amount = utils.random(utils.random(11, 30), utils.random(96, 234));
+    }
+  }
+
+};
+
 Planet.prototype.calculateBounds = function () {
   this.position = new utils.Point(this.point.x - this.size, this.point.y - this.size);
   this.width = this.size * 2;
@@ -100,7 +119,12 @@ Planet.prototype.renderObject = function () {
 };
 
 Planet.prototype.renderText = function () {
-  text(this.name, this.point.x + this.size + 5, this.point.y - 3, colors.white);
+  text({
+    name: this.name,
+    x: this.point.x + this.size + 5,
+    y: this.point.y - 3,
+    color: colors.white
+  });
 };
 
 Planet.prototype.incrementalMove = function () {

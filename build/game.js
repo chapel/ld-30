@@ -933,6 +933,78 @@ exports.getString = function(length) {
   return priv.result;
 };
 
+},{}],"/Users/jchapel/Projects/ld-30/node_modules/truncate/truncate.js":[function(require,module,exports){
+/*global module:true*/
+/*jslint nomen:true*/
+/**
+ * @module Utility
+ */
+(function (context, undefined) {
+    'use strict';
+
+    var DEFAULT_TRUNCATE_SYMBOL = '...',
+        URL_REGEX               = /(((ftp|https?):\/\/)[\-\w@:%_\+.~#?,&\/\/=]+)|((mailto:)?[_.\w-]+@([\w][\w\-]+\.)+[a-zA-Z]{2,3})/g; // Simple regexp
+
+    function __appendEllipsis(string, options, content){
+        if(content.length === string.length || !options.ellipsis){return content;}
+        content += options.ellipsis;
+        return content;
+    }
+    /**
+     * Truncate HTML string and keep tag safe.
+     *
+     * @method truncate
+     * @param {String} string string needs to be truncated
+     * @param {Number} maxLength length of truncated string
+     * @param {Object} options (optional)
+     * @param {Boolean} [options.keepImageTag] flag to specify if keep image tag, false by default
+     * @param {Boolean|String} [options.ellipsis] omission symbol for truncated string, '...' by default
+     * @return {String} truncated string
+     */
+    function truncate(string, maxLength, options) {
+        var content = '',         // truncated text storage
+            matches = true,
+            remainingLength = maxLength,
+            result,
+            index;
+
+        options          = options || {};
+        options.ellipsis = (typeof options.ellipsis === "undefined") ? DEFAULT_TRUNCATE_SYMBOL : options.ellipsis;
+
+        if(!string || string.length === 0){
+            return '';
+        }
+
+        matches = true;
+        while(matches){
+            URL_REGEX.lastIndex = content.length;
+            matches = URL_REGEX.exec(string);
+
+            if(!matches || (matches.index - content.length) >= remainingLength){
+                content += string.substring(content.length, maxLength);
+                return __appendEllipsis(string, options, content, maxLength);
+            }
+
+            result  = matches[0];
+            index   = matches.index;
+            content += string.substring(content.length, index + result.length);
+            remainingLength -= index + result.length;
+
+            if(remainingLength <= 0){
+                break;
+            }
+        }
+
+        return __appendEllipsis(string, options, content, maxLength);
+    }
+
+    if ('undefined' !== typeof module && module.exports) {
+        module.exports = truncate;
+    } else {
+        context.truncate = truncate;
+    }
+}(String));
+
 },{}],"/Users/jchapel/Projects/ld-30/src/colors.js":[function(require,module,exports){
 'use strict';
 
@@ -965,6 +1037,16 @@ module.exports = {
     var index = utils.random(min, max);
 
     return palette.getColor(index);
+  },
+  randomWithout: function randomWithout(without, min, max) {
+    var color = module.exports.random(min, max);
+    if (module.exports.equals(without, color)) {
+      return randomWithout(without, min, max);
+    }
+    return color;
+  },
+  equals: function (source, check) {
+    return source.toString() === check.toString();
   }
 };
 
@@ -1028,9 +1110,10 @@ function Planet(options) {
 
   this.type = options.type;
   this.size = options.size;
+  var fill = colors.random(1);
   this.color = {
-    outline: colors.random(1),
-    fill: colors.random(1)
+    outline: colors.randomWithout(fill, 1),
+    fill: fill
   };
 
   this.calculateBounds();
@@ -1041,6 +1124,8 @@ function Planet(options) {
 
   this.mainExport = this.getRandomResource();
   this.mainImport = this.getRandomResource(this.mainExport);
+
+  this.randomizeResourceAmounts();
 
   this.diameter = Math.floor(Math.random() * 1e5) + 2e4;
   this.population = Math.floor(this.diameter * (Math.random() * 1e5)) + 1e9;
@@ -1076,6 +1161,22 @@ Planet.prototype.getRandomResource = function (resource) {
   }
 };
 
+Planet.prototype.randomizeResourceAmounts = function () {
+  var keys = Object.keys(this.resources);
+  var resource;
+  for (var i = 0, len = keys.length; i < len; i += 1) {
+    resource = this.resources[keys[i]];
+    if (resource === this.mainExport) {
+      resource.amount = utils.random(utils.random(11, 100), utils.random(414, 602));
+    } else if (resource === this.mainImport) {
+      resource.amount = utils.random(utils.random(0, 14), utils.random(78, 109));
+    } else {
+      resource.amount = utils.random(utils.random(11, 30), utils.random(96, 234));
+    }
+  }
+
+};
+
 Planet.prototype.calculateBounds = function () {
   this.position = new utils.Point(this.point.x - this.size, this.point.y - this.size);
   this.width = this.size * 2;
@@ -1109,7 +1210,12 @@ Planet.prototype.renderObject = function () {
 };
 
 Planet.prototype.renderText = function () {
-  text(this.name, this.point.x + this.size + 5, this.point.y - 3, colors.white);
+  text({
+    name: this.name,
+    x: this.point.x + this.size + 5,
+    y: this.point.y - 3,
+    color: colors.white
+  });
 };
 
 Planet.prototype.incrementalMove = function () {
@@ -1228,8 +1334,23 @@ EventHandler.prototype.isMouseEvent = function (type) {
   return this.mouseEvents.indexOf(type) !== -1;
 };
 
-EventHandler.prototype.addEvent = function (event) {
-  this.events[event.type].push(event);
+EventHandler.prototype.getEvent = function (type, parent) {
+  var events = this.events[type];
+  for (var i = 0, len = events.length; i < len; i += 1) {
+    if (events[i].parent === parent && events[i].type === type) {
+      return events[i];
+    }
+  }
+};
+
+EventHandler.prototype.addEvent = function (type, options, Event) {
+  var event = this.getEvent(type, options.parent);
+  if (event) {
+    event.addEvent(options.handler);
+  } else {
+    event = new Event(options);
+  }
+  this.events[type].push(event);
 };
 
 EventHandler.prototype.on = function (type) {
@@ -1248,9 +1369,7 @@ EventHandler.prototype.on = function (type) {
 
     for (var i = 0, len = events.length; i < len; i += 1) {
       if (events[i].shouldHandle(e)) {
-        if (!events[i].handler(e)) {
-          break;
-        }
+        events[i].triggerEvents(e);
       }
     }
   };
@@ -1267,20 +1386,39 @@ KeyEvent.prototype.shouldHandle = function (e) {
 
 function MouseEvent(options) {
   this.type = options.type;
-  this.handler = options.handler;
   this.parent = options.parent;
 
   this.position = options.position;
   this.width = options.width;
   this.height = options.height;
 
+  this.events = [];
+  this.parent.mouseOver = false;
+
+  this.updateBounds();
+  this.addEvent(options.handler);
+}
+
+MouseEvent.prototype.addEvent = function (handler) {
+  this.events.push({
+    trigger: handler
+  });
+};
+
+MouseEvent.prototype.triggerEvents = function (e) {
+  for (var i = 0, len = this.events.length; i < len; i += 1) {
+    if (!this.events[i].trigger(e)) {
+      break;
+    }
+  }
+};
+
+MouseEvent.prototype.updateBounds = function () {
   this.left = this.position.x;
   this.top = this.position.y;
   this.right = this.left + this.width;
   this.bottom = this.top + this.height;
-
-  this.parent.mouseOver = false;
-}
+};
 
 MouseEvent.prototype.shouldHandle = function (e) {
   var shouldHandle = false;
@@ -1288,8 +1426,10 @@ MouseEvent.prototype.shouldHandle = function (e) {
 
   if (this.type === 'mouseover') {
 
-    shouldHandle = isWithin;
-    this.parent.mouseOver = true;
+    if (isWithin) {
+      shouldHandle = isWithin;
+      this.parent.mouseOver = true;
+    }
 
   } else if (this.type === 'mouseout') {
 
@@ -1306,6 +1446,7 @@ MouseEvent.prototype.shouldHandle = function (e) {
 };
 
 MouseEvent.prototype.isWithin = function (e) {
+  this.updateBounds();
   return this.right >= e.x &&
          this.left <= e.x &&
          this.bottom >= e.y &&
@@ -1317,9 +1458,9 @@ var eventHandler = new EventHandler();
 exports.on = function (type, options) {
   options.type = type;
   if (eventHandler.isMouseEvent(type)) {
-    eventHandler.addEvent(new MouseEvent(options));
+    eventHandler.addEvent(type, options, MouseEvent);
   } else {
-    eventHandler.addEvent(new KeyEvent(options));
+    eventHandler.addEvent(type, options, KeyEvent);
   }
 };
 
@@ -1437,27 +1578,63 @@ Group.prototype.visible = function (visible) {
   }
 };
 
-function Line(options, parent) {
+function Base(options, parent) {
   this.parent = parent;
+  this.visible = utils.isUndefined(options.visible) ? false : options.visible;
+}
+
+Base.prototype.createRelativePoint = function (x, y, parentPoint) {
+  return new utils.Point(x + parentPoint.x, y + parentPoint.y);
+};
+
+events.extendProto(Base.prototype);
+
+function Line(options, parent) {
+  Base.call(this, options, parent);
+
+  this.start = this.createRelativePoint(options.startX, options.startY, parent.startPosition);
+  this.end = this.createRelativePoint(options.endX, options.endY, parent.startPosition);
+  this.color = options.color;
+}
+
+util.inherits(Line, Base);
+
+Line.prototype.render = function () {
+  if (this.visible) {
+    ctx
+      .penColor(this.color)
+      .line(this.start.x, this.start.y, this.end.x, this.end.y);
+    utils.clearColors();
+  }
+};
+
+function Text(options, parent) {
+  Base.call(this, options, parent);
+
   this.text = '' + options.text;
   this.position = this.createRelativePoint(options.x, options.y, parent.startPosition);
   this.textColor = options.textColor;
   this.bgColor = options.bgColor;
-  this.visible = utils.isUndefined(options.visible) ? false : options.visible;
+  this.align = options.align;
 }
 
-Line.prototype.createRelativePoint = function (x, y, parentPoint) {
-  return new utils.Point(x + parentPoint.x, y + parentPoint.y);
-};
+util.inherits(Text, Base);
 
-Line.prototype.render = function () {
+Text.prototype.render = function () {
   if (this.visible) {
-    text(this.text, this.position.x, this.position.y, this.textColor, this.bgColor);
+    text({
+      text: this.text,
+      x: this.position.x,
+      y: this.position.y,
+      color: this.textColor,
+      bgColor: this.bgColor,
+      align: this.align
+    });
   }
 };
 
-function MenuOption(options) {
-  Line.call(this, options);
+function MenuOption(options, parent) {
+  Text.call(this, options, parent);
 
   var textMeasure = ctx.measureText(this.text);
   this.width = textMeasure.width;
@@ -1478,9 +1655,7 @@ function MenuOption(options) {
   }
 }
 
-events.extendProto(MenuOption.prototype);
-
-util.inherits(MenuOption, Line);
+util.inherits(MenuOption, Text);
 
 function Menu(options) {
   this.title = options.title;
@@ -1511,7 +1686,12 @@ Menu.prototype.renderBox = function () {
 
 Menu.prototype.renderTitle = function () {
   if (this.title) {
-    text(this.title, this.startPosition.x + 5, this.startPosition.y + 5, this.textColor, null);
+    text({
+      text: this.title,
+      x: this.startPosition.x + 5,
+      y: this.startPosition.y + 5,
+      color: this.textColor
+    });
   }
 };
 
@@ -1521,10 +1701,16 @@ Menu.prototype.renderChildren = function () {
   }
 };
 
-Menu.prototype.addText = function (options) {
+Menu.prototype.addLine = function (options) {
   var line = new Line(options, this);
   this.children.push(line);
   return line;
+};
+
+Menu.prototype.addText = function (options) {
+  var textLine = new Text(options, this);
+  this.children.push(textLine);
+  return textLine;
 };
 
 Menu.prototype.addMenuOption = function (options) {
@@ -1542,6 +1728,7 @@ Menu.prototype.createGroup = function (name, items) {
 };
 
 Menu.Line = Line;
+Menu.Text = Text;
 Menu.MenuOption = MenuOption;
 
 module.exports = Menu;
@@ -1673,15 +1860,28 @@ function Screen(options) {
     this._onRender = function () {};
   }
 
+  if (options.onInit) {
+    this.onInit(options.onInit);
+  } else {
+    this.init = function () {};
+  }
+
+  if (options.onRemove) {
+    this.onRemove(options.onRemove);
+  } else {
+    this.remove = function () {};
+  }
+
   this.ctx = ctx;
   this.children = [];
 }
 
-Screen.prototype.init = function () {
-  this.dirty(true);
+Screen.prototype.onInit = function (init, context) {
+  this.init = utils.bind(context || this, init);
 };
 
-Screen.prototype.remove = function () {
+Screen.prototype.onRemove = function (remove, context) {
+  this.remove = utils.bind(context || this, remove);
 };
 
 Screen.prototype.onRender = function (onRender, context) {
@@ -1693,21 +1893,14 @@ Screen.prototype.dirty = function (isDirty) {
 };
 
 Screen.prototype.clear = function () {
-  if (!this.isDirty) {
-    return;
-  }
   this.ctx.clear();
 };
 
 Screen.prototype.render = function (delta) {
-  if (!this.isDirty) {
-    return;
-  }
   this._onRender(delta);
   for (var i = 0; i < this.childLength; i += 1) {
     this.children[i].render(delta);
   }
-  //this.dirty(false);
 };
 
 Screen.prototype.addChild = function (child) {
@@ -1718,7 +1911,237 @@ Screen.prototype.addChild = function (child) {
 
 module.exports = Screen;
 
-},{"./ctx":"/Users/jchapel/Projects/ld-30/src/ctx.js","./utils":"/Users/jchapel/Projects/ld-30/src/utils.js"}],"/Users/jchapel/Projects/ld-30/src/screens/planet.js":[function(require,module,exports){
+},{"./ctx":"/Users/jchapel/Projects/ld-30/src/ctx.js","./utils":"/Users/jchapel/Projects/ld-30/src/utils.js"}],"/Users/jchapel/Projects/ld-30/src/screens/planet-flavor-text.js":[function(require,module,exports){
+'use strict';
+
+var utils = require('../utils');
+
+function FlavorText(options) {
+  this.screen = options.screen;
+  this.primary = options.primary;
+  this.secondary = options.secondary;
+  this.bottom = options.bottom;
+
+  if (options.onClickTrade) {
+    this.onClickTrade(options.onClickTrade);
+  } else {
+    this.onClickTrade(function () {});
+  }
+
+  if (options.onClickLeave) {
+    this.onClickLeave(options.onClickLeave);
+  } else {
+    this.onClickLeave(function () {});
+  }
+}
+
+FlavorText.prototype.create = function () {
+  var screen = this.screen;
+  var self = this;
+
+  this.text = screen.menu.createGroup('flavorText', [
+    screen.menu.addText({
+      text: 'Diameter',
+      x: 5,
+      y: 20,
+      textColor: this.secondary
+    }),
+    screen.menu.addText({
+      text: utils.formatMeters(screen.planet.diameter),
+      x: 5,
+      y: 30,
+      textColor: this.primary
+    }),
+    screen.menu.addText({
+      text: 'Population',
+      x: 5,
+      y: 40,
+      textColor: this.secondary
+    }),
+    screen.menu.addText({
+      text: utils.formatNumber(screen.planet.population),
+      x: 5,
+      y: 50,
+      textColor: this.primary
+    }),
+    screen.menu.addText({
+      text: 'Main Export',
+      x: 5,
+      y: 60,
+      textColor: this.secondary
+    }),
+    screen.menu.addText({
+      text: screen.planet.mainExport.name,
+      x: 5,
+      y: 70,
+      textColor: this.primary
+    }),
+    screen.menu.addText({
+      text: 'Main Import',
+      x: 5,
+      y: 80,
+      textColor: this.secondary
+    }),
+    screen.menu.addText({
+      text: screen.planet.mainImport.name,
+      x: 5,
+      y: 90,
+      textColor: this.primary
+    })
+  ]);
+
+  this.options = screen.menu.createGroup('mainOptions', [
+    screen.menu.addMenuOption({
+      text: '* Trade',
+      x: 5,
+      y: this.bottom - 15,
+      textColor: this.primary,
+      bgHoverColor: this.secondary,
+      onClick: function () {
+        self.clickTrade();
+      }
+    }),
+    screen.menu.addMenuOption({
+      text: '* Leave Orbit',
+      x: 5,
+      y: this.bottom,
+      textColor: this.primary,
+      bgHoverColor: this.secondary,
+      onClick: function () {
+        self.clickLeave();
+      }
+    })
+  ]);
+};
+
+FlavorText.prototype.toggle = function (toggle) {
+  this.text.visible(toggle);
+  this.options.visible(toggle);
+};
+
+FlavorText.prototype.onClickTrade = function (handler, context) {
+  this.clickTrade = utils.bind(context || this, handler);
+};
+
+FlavorText.prototype.onClickLeave = function (handler, context) {
+  this.clickLeave = utils.bind(context || this, handler);
+};
+
+module.exports = FlavorText;
+
+},{"../utils":"/Users/jchapel/Projects/ld-30/src/utils.js"}],"/Users/jchapel/Projects/ld-30/src/screens/planet-trade-menu.js":[function(require,module,exports){
+'use strict';
+
+var utils = require('../utils');
+var truncate = require('truncate');
+
+function TradeMenu(options) {
+  this.screen = options.screen;
+  this.primary = options.primary;
+  this.secondary = options.secondary;
+  this.bottom = options.bottom;
+
+  if (options.onClickBack) {
+    this.onClickBack(options.onClickBack);
+  } else {
+    this.onClickBack(function () {});
+  }
+}
+
+TradeMenu.prototype.create = function () {
+  var screen = this.screen;
+  var self = this;
+
+  var tradeItems = [
+    screen.menu.addText({
+      text: 'Trade',
+      x: 5,
+      y: 20,
+      textColor: this.secondary
+    }),
+    screen.menu.addText({
+      text: 'Amount',
+      x: 115,
+      y: 20,
+      textColor: this.secondary,
+      align: 'right'
+    }),
+    screen.menu.addLine({
+      startX: 5,
+      startY: 30,
+      endX: 115,
+      endY: 30,
+      color: this.secondary
+    })
+  ];
+
+  var startY = 35;
+  var toggle = false;
+  var resource;
+  for (var name in screen.planet.resources) {
+    resource = screen.planet.resources[name];
+    tradeItems.push(this.createAmount(resource, startY, toggle));
+    tradeItems.push(this.createMenuItem(resource, startY, toggle));
+    startY += 10;
+    toggle = !toggle;
+  }
+
+  tradeItems.push(screen.menu.addMenuOption({
+    text: '* Back',
+    x: 5,
+    y: this.bottom,
+    textColor: this.primary,
+    bgHoverColor: this.secondary,
+    onClick: function () {
+      self.clickBack();
+    }
+  }));
+
+  this.list = screen.menu.createGroup('tradeMenu', tradeItems);
+};
+
+TradeMenu.prototype.createMenuItem = function (resource, y, toggle) {
+  var name = truncate(resource.name, 12);
+  var resourceMenu = this.screen.menu.addMenuOption({
+    text: name,
+      x: 5,
+      y: y,
+      textColor: toggle ? this.secondary : this.primary,
+      bgHoverColor: toggle ? this.primary : this.secondary
+  });
+  resourceMenu.on('mouseover', function () {
+    this.text = resource.name;
+  });
+  resourceMenu.on('mouseout', function () {
+    this.text = name;
+  });
+  return resourceMenu;
+};
+
+TradeMenu.prototype.createAmount = function (resource, y, toggle) {
+  var resourceAmount = this.screen.menu.addMenuOption({
+    text: resource.amount,
+    x: 115,
+    y: y,
+    textColor: toggle ? this.secondary : this.primary,
+    bgHoverColor: toggle ? this.primary : this.secondary,
+    align: 'right'
+  });
+  return resourceAmount;
+};
+
+
+TradeMenu.prototype.toggle = function (toggle) {
+  this.list.visible(toggle);
+};
+
+TradeMenu.prototype.onClickBack = function (handler, context) {
+  this.clickBack = utils.bind(context || this, handler);
+};
+
+module.exports = TradeMenu;
+
+},{"../utils":"/Users/jchapel/Projects/ld-30/src/utils.js","truncate":"/Users/jchapel/Projects/ld-30/node_modules/truncate/truncate.js"}],"/Users/jchapel/Projects/ld-30/src/screens/planet.js":[function(require,module,exports){
 'use strict';
 
 var Screen = require('../screen');
@@ -1726,8 +2149,9 @@ var colors = require('../colors');
 
 var Starfield = require('../elements/starfield');
 var Planet = require('../elements/planet');
+var FlavorText = require('./planet-flavor-text');
+var TradeMenu = require('./planet-trade-menu');
 var Menu = require('../menu');
-var utils = require('../utils');
 
 exports.createScreen = function () {
 
@@ -1737,7 +2161,7 @@ exports.createScreen = function () {
 
   screen.field = screen.addChild(new Starfield(200));
 
-  screen.selectedPlanet = screen.addChild(new Planet({
+  screen.planet = screen.addChild(new Planet({
     visible: true,
     x: 95,
     y: 100,
@@ -1745,122 +2169,85 @@ exports.createScreen = function () {
     showName: false
   }));
 
+  var primary = screen.planet.color.fill || colors.orange;
+  var secondary = screen.planet.color.outline || colors.sage;
+
+  var bottom = 165;
+
   screen.menu = screen.addChild(new Menu({
-    title: 'Planet ' + screen.selectedPlanet.name,
+    title: 'Planet ' + screen.planet.name,
     x: 190,
     y: 10,
     width: 120,
     height: 180,
-    textColor: colors.white,
+    textColor: primary,
     bgColor: colors.black,
-    borderColor: colors.white
+    borderColor: secondary
   }));
 
-  screen.flavorText = screen.menu.createGroup('flavorText', [
-    screen.menu.addText({
-      text: 'Diameter',
-      x: 5,
-      y: 20,
-      textColor: colors.grey
-    }),
-    screen.menu.addText({
-      text: utils.formatMeters(screen.selectedPlanet.diameter),
-      x: 5,
-      y: 30,
-      textColor: colors.white
-    }),
-    screen.menu.addText({
-      text: 'Population',
-      x: 5,
-      y: 40,
-      textColor: colors.grey
-    }),
-    screen.menu.addText({
-      text: utils.formatNumber(screen.selectedPlanet.population),
-      x: 5,
-      y: 50,
-      textColor: colors.white
-    }),
-    screen.menu.addText({
-      text: 'Main Export',
-      x: 5,
-      y: 60,
-      textColor: colors.grey
-    }),
-    screen.menu.addText({
-      text: screen.selectedPlanet.mainExport.name,
-      x: 5,
-      y: 70,
-      textColor: colors.white
-    }),
-    screen.menu.addText({
-      text: 'Main Import',
-      x: 5,
-      y: 80,
-      textColor: colors.grey
-    }),
-    screen.menu.addText({
-      text: screen.selectedPlanet.mainImport.name,
-      x: 5,
-      y: 90,
-      textColor: colors.white
-    })
-  ]);
+  screen.flavorText = new FlavorText({
+    screen: screen,
+    primary: primary,
+    secondary: secondary,
+    bottom: bottom,
+    onClickTrade: function () {
+      this.toggle(false);
+      screen.tradeMenu.toggle(true);
+    },
+    onClickLeave: function () {
+    }
+  });
 
-  screen.flavorText.visible(true);
+  screen.tradeMenu = new TradeMenu({
+    screen: screen,
+    primary: primary,
+    secondary: secondary,
+    bottom: bottom,
+    onClickBack: function () {
+      this.toggle(false);
+      screen.flavorText.toggle(true);
+    }
+  });
 
+  screen.flavorText.create();
+  screen.tradeMenu.create();
 
-  /*
-    this.menu = this.addChild(new Menu({
-      title: 'Test',
-      x: 100,
-      y: 10,
-      width: 100,
-      height: 150,
-      textColor: colors.white,
-      bgColor: colors.black,
-      borderColor: colors.white
-    }));
+  screen.onInit(function () {
+    screen.flavorText.toggle(true);
+  });
 
-    var foo = this.menu.addMenuOption({
-      text: 'Foo',
-      x: 105,
-      y: 30,
-      textColor: colors.white,
-      bgHoverColor: colors.green,
-      onClick: function () {
-        alert('foo');
-      }
-    });
-
-
-    var bar = this.menu.addMenuOption({
-      text: 'Bar',
-      x: 105,
-      y: 40,
-      textColor: colors.white,
-      bgHoverColor: colors.purple
-    });
-
-    this.ctx.bgColor(colors.black);
-    */
+  screen.onRemove(function () {
+    screen.flavorText.toggle(false);
+    screen.tradeMenu.toggle(false);
+  });
 
   return screen;
 };
 
-},{"../colors":"/Users/jchapel/Projects/ld-30/src/colors.js","../elements/planet":"/Users/jchapel/Projects/ld-30/src/elements/planet.js","../elements/starfield":"/Users/jchapel/Projects/ld-30/src/elements/starfield.js","../menu":"/Users/jchapel/Projects/ld-30/src/menu.js","../screen":"/Users/jchapel/Projects/ld-30/src/screen.js","../utils":"/Users/jchapel/Projects/ld-30/src/utils.js"}],"/Users/jchapel/Projects/ld-30/src/text.js":[function(require,module,exports){
+},{"../colors":"/Users/jchapel/Projects/ld-30/src/colors.js","../elements/planet":"/Users/jchapel/Projects/ld-30/src/elements/planet.js","../elements/starfield":"/Users/jchapel/Projects/ld-30/src/elements/starfield.js","../menu":"/Users/jchapel/Projects/ld-30/src/menu.js","../screen":"/Users/jchapel/Projects/ld-30/src/screen.js","./planet-flavor-text":"/Users/jchapel/Projects/ld-30/src/screens/planet-flavor-text.js","./planet-trade-menu":"/Users/jchapel/Projects/ld-30/src/screens/planet-trade-menu.js"}],"/Users/jchapel/Projects/ld-30/src/text.js":[function(require,module,exports){
 'use strict';
 
 var ctx = require('./ctx');
-var colors = require('./colors');
 var utils = require('./utils');
 
-module.exports = function (text, x, y, penColor, fillColor) {
-  fillColor = utils.isUndefined(fillColor) ? colors.black : fillColor;
+module.exports = function (options) {
+  var text = options.text;
+  var x = options.x;
+  var y = options.y;
+  var color = options.color;
+  var bgColor = options.bgColor;
+  var align = options.align;
+
+  if (align) {
+    ctx.textAlign(align);
+  }
+
   ctx
-    .penColor(penColor)
-    .fillColor(fillColor)
+    .penColor(color)
+    .fillColor(bgColor)
     .text(text, Math.floor(x), Math.floor(y));
+
+  ctx.textAlign('left');
   utils.clearColors();
 };
 
@@ -1871,7 +2258,7 @@ module.exports.onReady = function (init) {
   });
 };
 
-},{"./colors":"/Users/jchapel/Projects/ld-30/src/colors.js","./ctx":"/Users/jchapel/Projects/ld-30/src/ctx.js","./utils":"/Users/jchapel/Projects/ld-30/src/utils.js"}],"/Users/jchapel/Projects/ld-30/src/utils.js":[function(require,module,exports){
+},{"./ctx":"/Users/jchapel/Projects/ld-30/src/ctx.js","./utils":"/Users/jchapel/Projects/ld-30/src/utils.js"}],"/Users/jchapel/Projects/ld-30/src/utils.js":[function(require,module,exports){
 'use strict';
 
 var ctx = require('./ctx');
