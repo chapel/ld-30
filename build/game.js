@@ -2297,51 +2297,14 @@ TradeModal.prototype.create = function () {
     borderColor: this.secondary
   }));
 
-  this.buyBox = modal.addChildMenu({
+  this.buyInput = this.createInput({
     x: 120,
-    y: 35,
-    width: 35,
-    height: 15,
-    textColor: this.primary,
-    bgColor: colors.black,
-    borderColor: this.secondary
+    y: 35
   });
 
-  this.buyAmount = this.buyBox.addText({
-    text: 0,
-    x: 33,
-    y: 4,
-    textColor: this.primary,
-    align: 'right',
-    visible: true
-  });
-
-  this.buyInc = this.buyBox.addPolygon({
-    x: -14,
-    y: 5,
-    points: [0, 0, 5, -5, 10, 0],
-    color: this.secondary,
-    hoverColor: this.primary,
-    visible: true,
-    onClick: function () {
-      self.buyAmount.setText(parseInt(self.buyAmount.text, 10) + 1);
-    }
-  });
-
-  this.buyDec = this.buyBox.addPolygon({
-    x: -14,
-    y: 9,
-    points: [0, 0, 5, 5, 10, 0],
-    color: this.secondary,
-    hoverColor: this.primary,
-    visible: true,
-    onClick: function () {
-      var amount = parseInt(self.buyAmount.text, 10) - 1;
-      if (amount < 0) {
-        amount = 0;
-      }
-      self.buyAmount.setText(amount);
-    }
+  this.sellInput = this.createInput({
+    x: 120,
+    y: 55
   });
 
   this.header = this.modal.createGroup('header', [
@@ -2359,9 +2322,61 @@ TradeModal.prototype.create = function () {
       endY: 30,
       color: this.secondary
     }),
-    this.buyBox
+    this.buyInput,
+    this.sellInput
   ]);
 
+};
+
+TradeModal.prototype.createInput = function (options) {
+  var input = this.modal.addChildMenu({
+    x: options.x,
+    y: options.y,
+    width: 35,
+    height: 15,
+    textColor: this.primary,
+    bgColor: colors.black,
+    borderColor: this.secondary
+  });
+
+  var amount = input.amount = input.addText({
+    text: 0,
+    x: 33,
+    y: 4,
+    textColor: this.primary,
+    align: 'right',
+    visible: true
+  });
+
+  input.addPolygon({
+    x: -14,
+    y: 5,
+    points: [0, 0, 5, -5, 10, 0],
+    color: this.secondary,
+    hoverColor: this.primary,
+    visible: true,
+    onClick: function () {
+      amount.setText(parseInt(amount.text, 10) + 1);
+    }
+  });
+
+  input.addPolygon({
+    x: -14,
+    y: 9,
+    points: [0, 0, 5, 5, 10, 0],
+    color: this.secondary,
+    hoverColor: this.primary,
+    visible: true,
+    onClick: function () {
+      var count = parseInt(amount.text, 10) - 1;
+      if (count < 0) {
+        count = 0;
+      }
+      amount.setText(count);
+    }
+  });
+
+  return input;
 };
 
 TradeModal.prototype.toggle = function (toggle) {
