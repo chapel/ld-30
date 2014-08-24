@@ -101,4 +101,8 @@ Point.prototype.move = function (point) {
   this.y = point.y;
 };
 
+Point.prototype.toArray = function () {
+  return [this.x, this.y];
+};
+
 exports.Point = Point;

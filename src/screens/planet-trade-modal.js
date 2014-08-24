@@ -17,12 +17,13 @@ function TradeModal(options) {
 }
 
 TradeModal.prototype.create = function () {
+  var self = this;
   var screen = this.screen;
 
   var modal = this.modal = screen.addChild(new Menu({
     title: '',
-    x: (320 - 160)/6,
-    y: (200 - 100)/2,
+    x: Math.floor((320 - 160)/6),
+    y: Math.floor((200 - 100)/2),
     width: 160,
     height: 100,
     textColor: this.primary,
@@ -30,9 +31,56 @@ TradeModal.prototype.create = function () {
     borderColor: this.secondary
   }));
 
+  this.buyBox = modal.addChildMenu({
+    x: 120,
+    y: 35,
+    width: 35,
+    height: 15,
+    textColor: this.primary,
+    bgColor: colors.black,
+    borderColor: this.secondary
+  });
+
+  this.buyAmount = this.buyBox.addText({
+    text: 0,
+    x: 33,
+    y: 4,
+    textColor: this.primary,
+    align: 'right',
+    visible: true
+  });
+
+  this.buyInc = this.buyBox.addPolygon({
+    x: -14,
+    y: 5,
+    points: [0, 0, 5, -5, 10, 0],
+    color: this.secondary,
+    hoverColor: this.primary,
+    visible: true,
+    onClick: function () {
+      self.buyAmount.setText(parseInt(self.buyAmount.text, 10) + 1);
+    }
+  });
+
+  this.buyDec = this.buyBox.addPolygon({
+    x: -14,
+    y: 9,
+    points: [0, 0, 5, 5, 10, 0],
+    color: this.secondary,
+    hoverColor: this.primary,
+    visible: true,
+    onClick: function () {
+      var amount = parseInt(self.buyAmount.text, 10) - 1;
+      if (amount < 0) {
+        amount = 0;
+      }
+      self.buyAmount.setText(amount);
+    }
+  });
+
   this.header = this.modal.createGroup('header', [
     modal.addText({
-      text: 'Price  Amount',
+      text: 'Price    Amount',
       x: 155,
       y: 20,
       align: 'right',
@@ -44,7 +92,8 @@ TradeModal.prototype.create = function () {
       endX: 155,
       endY: 30,
       color: this.secondary
-    })
+    }),
+    this.buyBox
   ]);
 
 };

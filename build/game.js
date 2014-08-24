@@ -1604,6 +1604,73 @@ Base.prototype.visible = function (toggle) {
 
 events.extendProto(Base.prototype);
 
+function Polygon(options, parent) {
+  Base.call(this, options, parent);
+
+  this.attach = this.createRelativePoint(options.x, options.y, parent.startPosition);
+
+  this.points = this.createRelativePoints(options.points);
+
+  this.color = options.color;
+  this.borderColor = options.borderColor;
+
+  if (options.hoverColor) {
+    this.on('mouseover', function () {
+      this.color = options.hoverColor;
+    });
+
+    this.on('mouseout', function () {
+      this.color = options.color;
+    });
+  }
+
+  if (options.onClick) {
+    this.on('click', options.onClick);
+  }
+}
+
+util.inherits(Polygon, Base);
+
+Polygon.prototype.createRelativePoints = function (points) {
+  var relativePoints = [];
+
+  var lowestX = Infinity;
+  var lowestY = Infinity;
+  var highestX = -Infinity;
+  var highestY = -Infinity;
+  var point;
+  for (var i = 0, len = points.length; i < len; i += 2) {
+    point = points.slice(i, i + 2);
+    point = this.createRelativePoint(point[0], point[1], this.attach);
+    if (point.x < lowestX) {
+      lowestX = point.x;
+    }
+    if (point.y < lowestY) {
+      lowestY = point.y;
+    }
+    if (point.x > highestX) {
+      highestX = point.x;
+    }
+    if (point.y > highestY) {
+      highestY = point.y;
+    }
+    relativePoints = relativePoints.concat(point.toArray());
+  }
+  this.position = new utils.Point(lowestX, lowestY);
+  this.width = highestX - lowestX;
+  this.height = highestY - lowestY;
+  return relativePoints;
+};
+
+Polygon.prototype.render = function () {
+  if (this.visible()) {
+    ctx
+      .fillColor(this.color)
+      .polygon(this.points);
+    utils.clearColors();
+  }
+};
+
 function Line(options, parent) {
   Base.call(this, options, parent);
 
@@ -1634,6 +1701,10 @@ function Text(options, parent) {
 }
 
 util.inherits(Text, Base);
+
+Text.prototype.setText = function (text) {
+  this.text = '' + text;
+};
 
 Text.prototype.render = function () {
   if (this.visible()) {
@@ -1672,10 +1743,16 @@ function MenuOption(options, parent) {
 
 util.inherits(MenuOption, Text);
 
-function Menu(options) {
+function Menu(options, parent) {
+  Base.call(this, options, parent);
+
   this.title = options.title;
 
-  this.startPosition = new utils.Point(options.x, options.y);
+  if (this.parent) {
+    this.startPosition = this.createRelativePoint(options.x, options.y, parent.startPosition);
+  } else {
+    this.startPosition = new utils.Point(options.x, options.y);
+  }
   this.width = options.width;
   this.height = options.height;
   this.textColor = options.textColor || colors.black;
@@ -1683,17 +1760,9 @@ function Menu(options) {
   this.bgColor = options.bgColor || colors.white;
 
   this.children = [];
-  this._visible = null;
-  this.visible(utils.isUndefined(options.visible) ? false : options.visible);
 }
 
-Menu.prototype.visible = function (toggle) {
-  if (utils.isUndefined(toggle)) {
-    return this._visible;
-  }
-
-  this._visible = toggle;
-};
+util.inherits(Menu, Base);
 
 Menu.prototype.render = function () {
   if (this.visible()) {
@@ -1728,6 +1797,12 @@ Menu.prototype.renderChildren = function () {
   }
 };
 
+Menu.prototype.addPolygon = function (options) {
+  var polygon = new Polygon(options, this);
+  this.children.push(polygon);
+  return polygon;
+};
+
 Menu.prototype.addLine = function (options) {
   var line = new Line(options, this);
   this.children.push(line);
@@ -1744,6 +1819,12 @@ Menu.prototype.addMenuOption = function (options) {
   var menuOption = new MenuOption(options, this);
   this.children.push(menuOption);
   return menuOption;
+};
+
+Menu.prototype.addChildMenu = function (options) {
+  var menu = new Menu(options, this);
+  this.children.push(menu);
+  return menu;
 };
 
 Menu.prototype.createGroup = function (name, items) {
@@ -2202,12 +2283,13 @@ function TradeModal(options) {
 }
 
 TradeModal.prototype.create = function () {
+  var self = this;
   var screen = this.screen;
 
   var modal = this.modal = screen.addChild(new Menu({
     title: '',
-    x: (320 - 160)/6,
-    y: (200 - 100)/2,
+    x: Math.floor((320 - 160)/6),
+    y: Math.floor((200 - 100)/2),
     width: 160,
     height: 100,
     textColor: this.primary,
@@ -2215,9 +2297,56 @@ TradeModal.prototype.create = function () {
     borderColor: this.secondary
   }));
 
+  this.buyBox = modal.addChildMenu({
+    x: 120,
+    y: 35,
+    width: 35,
+    height: 15,
+    textColor: this.primary,
+    bgColor: colors.black,
+    borderColor: this.secondary
+  });
+
+  this.buyAmount = this.buyBox.addText({
+    text: 0,
+    x: 33,
+    y: 4,
+    textColor: this.primary,
+    align: 'right',
+    visible: true
+  });
+
+  this.buyInc = this.buyBox.addPolygon({
+    x: -14,
+    y: 5,
+    points: [0, 0, 5, -5, 10, 0],
+    color: this.secondary,
+    hoverColor: this.primary,
+    visible: true,
+    onClick: function () {
+      self.buyAmount.setText(parseInt(self.buyAmount.text, 10) + 1);
+    }
+  });
+
+  this.buyDec = this.buyBox.addPolygon({
+    x: -14,
+    y: 9,
+    points: [0, 0, 5, 5, 10, 0],
+    color: this.secondary,
+    hoverColor: this.primary,
+    visible: true,
+    onClick: function () {
+      var amount = parseInt(self.buyAmount.text, 10) - 1;
+      if (amount < 0) {
+        amount = 0;
+      }
+      self.buyAmount.setText(amount);
+    }
+  });
+
   this.header = this.modal.createGroup('header', [
     modal.addText({
-      text: 'Price  Amount',
+      text: 'Price    Amount',
       x: 155,
       y: 20,
       align: 'right',
@@ -2229,7 +2358,8 @@ TradeModal.prototype.create = function () {
       endX: 155,
       endY: 30,
       color: this.secondary
-    })
+    }),
+    this.buyBox
   ]);
 
 };
@@ -2488,6 +2618,10 @@ Point.prototype.relative = function (other) {
 Point.prototype.move = function (point) {
   this.x = point.x;
   this.y = point.y;
+};
+
+Point.prototype.toArray = function () {
+  return [this.x, this.y];
 };
 
 exports.Point = Point;
