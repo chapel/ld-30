@@ -1852,7 +1852,7 @@ exports.Protrudium = new Resource({
   id: 'Protrudium',
   name: 'Protrudium',
   description: 'Highly radioactive, Protrudium is a refined ore from the center of planets, commonly used for weapons.',
-  baseValue: 10
+  baseValue: 15
 });
 list.push(exports.Protrudium);
 
@@ -1860,7 +1860,7 @@ exports.Mindworms = new Resource({
   id: 'Mindworms',
   name: 'Mindworms',
   description: 'Commonly used as biological weapons, mindworms are popular in the war torn areas of the universe.',
-  baseValue: 20
+  baseValue: 25
 });
 list.push(exports.Mindworms);
 
@@ -1868,7 +1868,7 @@ exports.VespeneGas = new Resource({
   id: 'VespeneGas',
   name: 'Vespene Gas',
   description: 'Vespene gas is commonly used as an energy source for ships and machinary, but some races live off of it.',
-  baseValue: 5
+  baseValue: 10
 });
 list.push(exports.VespeneGas);
 
@@ -1876,7 +1876,7 @@ exports.DenseCarbon = new Resource({
   id: 'DenseCarbon',
   name: 'Dense Carbon',
   description: 'On some planets carbon is the building block of life, but it normally rare across the universe.',
-  baseValue: 15
+  baseValue: 20
 });
 list.push(exports.DenseCarbon);
 
@@ -1884,7 +1884,7 @@ exports.Dilithium = new Resource({
   id: 'Dilithium',
   name: 'Dilithium Crystals',
   description: 'Necessary for containing warp drive anti-matter reactions.',
-  value: 30
+  baseValue: 35
 });
 list.push(exports.Dilithium);
 
@@ -2283,7 +2283,6 @@ function TradeModal(options) {
 }
 
 TradeModal.prototype.create = function () {
-  var self = this;
   var screen = this.screen;
 
   var modal = this.modal = screen.addChild(new Menu({
@@ -2297,17 +2296,11 @@ TradeModal.prototype.create = function () {
     borderColor: this.secondary
   }));
 
-  this.buyInput = this.createInput({
-    x: 120,
-    y: 35
-  });
 
-  this.sellInput = this.createInput({
-    x: 120,
-    y: 55
-  });
-
-  this.header = this.modal.createGroup('header', [
+  /**
+   * HEADERS/INTERFACE
+   */
+  this.interface = this.modal.createGroup('interface', [
     modal.addText({
       text: 'Price    Amount',
       x: 155,
@@ -2322,10 +2315,113 @@ TradeModal.prototype.create = function () {
       endY: 30,
       color: this.secondary
     }),
-    this.buyInput,
-    this.sellInput
+    modal.addText({
+      text: 'Buy',
+      x: 10,
+      y: 39,
+      textColor: this.secondary
+    }),
+    modal.addText({
+      text: 'Sell',
+      x: 10,
+      y: 59,
+      textColor: this.secondary
+    }),
+    modal.addText({
+      text: 'Totals',
+      x: 10,
+      y: 79,
+      textColor: this.secondary
+    }),
+    modal.addLine({
+      startX: 5,
+      startY: 74,
+      endX: 155,
+      endY: 74,
+      color: this.secondary
+    })
   ]);
 
+
+  /**
+   * PRICES
+   */
+  var buyPrice = this.buyPrice = this.createPrice({
+    x: 95,
+    y: 39
+  });
+
+  var sellPrice = this.sellPrice = this.createPrice({
+    x: 95,
+    y: 59
+  });
+
+  var totalPrice = this.totalPrice = this.createPrice({
+    x: 95,
+    y: 79
+  });
+
+  this.prices = this.modal.createGroup('prices', [
+    this.buyPrice,
+    this.sellPrice,
+    this.totalPrice
+  ]);
+
+
+  /**
+   * INPUTS
+   */
+  var totalAmount = this.totalAmount = this.createPrice({
+    x: 154,
+    y: 79
+  });
+
+  var buyInput = this.buyInput = this.createInput({
+    x: 120,
+    y: 35,
+    onClick: function (amount) {
+      totalAmount.setText(amount);
+      totalPrice.setText(-amount * buyPrice.getPrice());
+      sellInput.setAmount(0);
+    }
+  });
+
+  var sellInput = this.sellInput = this.createInput({
+    x: 120,
+    y: 55,
+    onClick: function (amount) {
+      totalAmount.setText(-amount);
+      totalPrice.setText(amount * sellPrice.getPrice());
+      buyInput.setAmount(0);
+    }
+  });
+
+  this.inputs = this.modal.createGroup('inputs', [
+    this.buyInput,
+    this.sellInput,
+    this.totalAmount
+  ]);
+
+};
+
+TradeModal.prototype.createPrice = function (options) {
+  var price = this.modal.addText({
+    text: '0',
+    x: options.x,
+    y: options.y,
+    align: 'right',
+    textColor: this.primary
+  });
+
+  price.getPrice = function () {
+    return parseInt(price.text, 10);
+  };
+
+  price.setPrice = function (amount) {
+    price.setText(amount);
+  };
+
+  return price;
 };
 
 TradeModal.prototype.createInput = function (options) {
@@ -2356,7 +2452,11 @@ TradeModal.prototype.createInput = function (options) {
     hoverColor: this.primary,
     visible: true,
     onClick: function () {
-      amount.setText(parseInt(amount.text, 10) + 1);
+      var number = input.getAmount() + 1;
+      amount.setText(number);
+      if (options.onClick) {
+        options.onClick(number);
+      }
     }
   });
 
@@ -2368,26 +2468,46 @@ TradeModal.prototype.createInput = function (options) {
     hoverColor: this.primary,
     visible: true,
     onClick: function () {
-      var count = parseInt(amount.text, 10) - 1;
+      var count = input.getAmount() - 1;
       if (count < 0) {
         count = 0;
       }
       amount.setText(count);
+      if (options.onClick) {
+        options.onClick(count);
+      }
     }
   });
+
+  input.getAmount = function () {
+    return parseInt(amount.text, 10);
+  };
+
+  input.setAmount = function (count) {
+    amount.setText(count);
+  };
 
   return input;
 };
 
 TradeModal.prototype.toggle = function (toggle) {
   this.modal.visible(toggle);
-  this.header.visible(toggle);
+  this.interface.visible(toggle);
+  this.prices.visible(toggle);
+  this.inputs.visible(toggle);
 };
 
 TradeModal.prototype.showModal = function (resource) {
   this.resource = resource;
 
   this.modal.title = 'Trade ' + this.resource.name;
+
+  var buyPrice = Math.round(this.resource.value());
+  if (buyPrice <= 0) {
+    buyPrice = 1;
+  }
+  this.buyPrice.setPrice(buyPrice);
+  this.sellPrice.setPrice(Math.round(this.resource.value() * utils.random(0.4, 0.75)));
   this.toggle(true);
 };
 
