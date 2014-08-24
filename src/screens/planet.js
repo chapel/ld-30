@@ -66,6 +66,7 @@ exports.createScreen = function () {
     },
     onClickBack: function () {
       this.toggle(false);
+      screen.tradeModal.toggle(false);
       screen.flavorText.toggle(true);
     }
   });
@@ -85,6 +86,7 @@ exports.createScreen = function () {
 
   screen.onInit(function () {
     screen.flavorText.toggle(true);
+    screen.tradeModal.showModal(screen.planet.resources.Dilithium);
   });
 
   screen.onRemove(function () {

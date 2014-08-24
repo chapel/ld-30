@@ -95,6 +95,9 @@ MouseEvent.prototype.addEvent = function (handler) {
 };
 
 MouseEvent.prototype.triggerEvents = function (e) {
+  if (!this.parent.visible()) {
+    return;
+  }
   for (var i = 0, len = this.events.length; i < len; i += 1) {
     if (!this.events[i].trigger(e)) {
       break;

@@ -15,17 +15,26 @@ function Group(options) {
 
 Group.prototype.visible = function (visible) {
   for (var i = 0, len = this.items.length; i < len; i += 1) {
-    this.items[i].visible = visible;
+    this.items[i].visible(visible);
   }
 };
 
 function Base(options, parent) {
   this.parent = parent;
-  this.visible = utils.isUndefined(options.visible) ? false : options.visible;
+  this._visible = null;
+  this.visible(utils.isUndefined(options.visible) ? false : options.visible);
 }
 
 Base.prototype.createRelativePoint = function (x, y, parentPoint) {
   return new utils.Point(x + parentPoint.x, y + parentPoint.y);
+};
+
+Base.prototype.visible = function (toggle) {
+  if (utils.isUndefined(toggle)) {
+    return this._visible;
+  }
+
+  this._visible = toggle;
 };
 
 events.extendProto(Base.prototype);
@@ -41,7 +50,7 @@ function Line(options, parent) {
 util.inherits(Line, Base);
 
 Line.prototype.render = function () {
-  if (this.visible) {
+  if (this.visible()) {
     ctx
       .penColor(this.color)
       .line(this.start.x, this.start.y, this.end.x, this.end.y);
@@ -62,7 +71,7 @@ function Text(options, parent) {
 util.inherits(Text, Base);
 
 Text.prototype.render = function () {
-  if (this.visible) {
+  if (this.visible()) {
     text({
       text: this.text,
       x: this.position.x,
@@ -108,16 +117,21 @@ function Menu(options) {
   this.borderColor = options.borderColor || colors.grey;
   this.bgColor = options.bgColor || colors.white;
 
-  this.visible(utils.isUndefined(options.visible) ? false : options.visible);
   this.children = [];
+  this._visible = null;
+  this.visible(utils.isUndefined(options.visible) ? false : options.visible);
 }
 
 Menu.prototype.visible = function (toggle) {
+  if (utils.isUndefined(toggle)) {
+    return this._visible;
+  }
+
   this._visible = toggle;
 };
 
 Menu.prototype.render = function () {
-  if (this._visible) {
+  if (this.visible()) {
     this.renderBox();
     this.renderTitle();
     this.renderChildren();
