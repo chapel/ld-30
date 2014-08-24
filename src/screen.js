@@ -1,10 +1,17 @@
 'use strict';
 
 var ctx = require('./ctx');
+var utils = require('./utils');
 
-function Screen() {
-  if (!this.onRender) {
-    throw new Error('You must register an onRender function');
+function Screen(options) {
+  this.bgColor = options.bgColor;
+
+  ctx.bgColor(this.bgColor);
+
+  if (options.onRender) {
+    this.onRender(options.onRender);
+  } else {
+    this._onRender = function () {};
   }
 
   this.ctx = ctx;
@@ -16,6 +23,10 @@ Screen.prototype.init = function () {
 };
 
 Screen.prototype.remove = function () {
+};
+
+Screen.prototype.onRender = function (onRender, context) {
+  this._onRender = utils.bind(context || this, onRender);
 };
 
 Screen.prototype.dirty = function (isDirty) {
@@ -33,7 +44,7 @@ Screen.prototype.render = function (delta) {
   if (!this.isDirty) {
     return;
   }
-  this.onRender(delta);
+  this._onRender(delta);
   for (var i = 0; i < this.childLength; i += 1) {
     this.children[i].render(delta);
   }

@@ -3,6 +3,7 @@
 var ctx = require('../ctx');
 var utils = require('../utils');
 var colors = require('../colors');
+var events = require('../events');
 var resources = require('../objects/resource-types');
 var text = require('../text');
 
@@ -10,6 +11,8 @@ function Planet(options) {
   options = options || {};
 
   this.name = utils.randomName();
+
+  this.showName = utils.isUndefined(options.showName) ? true : false;
 
   this.point = new utils.Point(options.x, options.y);
   this.velocity = new utils.Vector(0, 0);
@@ -21,13 +24,54 @@ function Planet(options) {
     fill: colors.random(1)
   };
 
+  this.calculateBounds();
+
   this.visible = options.visible || false;
 
   this.resources = resources.cloneAll(0);
 
+  this.mainExport = this.getRandomResource();
+  this.mainImport = this.getRandomResource(this.mainExport);
+
+  this.diameter = Math.floor(Math.random() * 1e5) + 2e4;
+  this.population = Math.floor(this.diameter * (Math.random() * 1e5)) + 1e9;
+
   this.targetPoint = null;
   this.targetSize = null;
+
+  if (options.onClick) {
+    this.on('click', options.onClick);
+  }
+
+  if (options.borderHoverColor) {
+    var outline = this.color.outline;
+    this.on('mouseover', function () {
+      this.color.outline = options.borderHoverColor;
+    });
+
+    this.on('mouseout', function () {
+      this.color.outline = outline;
+    });
+  }
 }
+
+Planet.prototype.getRandomResource = function (resource) {
+  var keys = Object.keys(this.resources);
+  var index = utils.random(0, keys.length);
+  var key = keys[index];
+  var randomResource = this.resources[key];
+  if (resource && randomResource === resource) {
+    return this.getRandomResource(resource);
+  } else {
+    return randomResource;
+  }
+};
+
+Planet.prototype.calculateBounds = function () {
+  this.position = new utils.Point(this.point.x - this.size, this.point.y - this.size);
+  this.width = this.size * 2;
+  this.height = this.size * 2;
+};
 
 Planet.prototype.render = function (delta) {
   if (!this.visible) {
@@ -41,7 +85,10 @@ Planet.prototype.render = function (delta) {
   }
 
   this.renderObject();
-  this.renderText();
+
+  if (this.showName) {
+    this.renderText();
+  }
 };
 
 Planet.prototype.renderObject = function () {
@@ -94,5 +141,7 @@ Planet.prototype.incrementalResize = function () {
 Planet.prototype.resize = function (size) {
   this.targetSize = size;
 };
+
+events.extendProto(Planet.prototype);
 
 module.exports = Planet;

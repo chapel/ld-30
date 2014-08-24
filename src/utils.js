@@ -2,15 +2,34 @@
 
 var ctx = require('./ctx');
 var readableRandom = require('readable-random');
+var format = require('format-number');
+
+var numberFormatter = format();
+var meterFormatter = format({
+  suffix: ' km'
+});
 
 exports.random = function (min, max) {
   return Math.min(Math.max(Math.floor(Math.random() * max), min), max);
 };
 
 exports.randomName = function () {
-  var size = exports.random(3, 9);
+  var size;
+  if (exports.random(0, 10) > 8) {
+    size = exports.random(3, 9);
+  } else {
+    size = exports.random(5, 9);
+  }
   var name = readableRandom.getString(size);
   return name[0].toUpperCase() + name.slice(1);
+};
+
+exports.formatMeters = function (number) {
+  return meterFormatter(number);
+};
+
+exports.formatNumber = function (number) {
+  return numberFormatter(number);
 };
 
 // Simple fast bind
@@ -22,6 +41,14 @@ exports.bind = function (context, fn) {
 
 exports.isUndefined = function (variable) {
   return typeof variable === 'undefined';
+};
+
+exports.argSlice = function (argObject) {
+  var args = [];
+  for (var i = 0, len = argObject.length; i < len; i += 1) {
+    args[i] = argObject[i];
+  }
+  return args;
 };
 
 exports.clearColors = function () {

@@ -9,68 +9,13 @@ var colors = require('./colors');
 var Screen = require('./screen');
 var events = require('./events');
 var Menu = require('./menu');
-var Planet = require('./elements/planet');
+var planet = require('./screens/planet');
 var Starfield = require('./elements/starfield');
 
 var game = new Game();
 
 game.onReady(function () {
-  function Test() {
-    Screen.call(this, arguments);
-
-    this.field = this.addChild(new Starfield(200));
-    this.planet = this.addChild(new Planet({
-      type: 'normal',
-      visible: true,
-      x: 50,
-      y: 50,
-      size: utils.random(10, 20)
-    }));
-    this.planet2 = this.addChild(new Planet({
-      type: 'normal',
-      visible: true,
-      x: 200,
-      y: 50,
-      size: utils.random(10, 20)
-    }));
-
-    this.menu = this.addChild(new Menu({
-      title: 'Test',
-      x: 100,
-      y: 10,
-      width: 100,
-      height: 150,
-      textColor: colors.white,
-      bgColor: colors.black,
-      borderColor: colors.white
-    }));
-
-    var option = this.menu.addMenuOption({
-      text: 'Foo',
-      x: 105,
-      y: 20,
-      textColor: colors.white
-    });
-
-    option.on('mouseover', function (e) {
-      option.bgColor = colors.green;
-    }, this);
-
-    option.on('mouseout', function (e) {
-      option.bgColor = colors.black;
-    }, this);
-
-    this.ctx.bgColor(colors.black);
-  }
-
-  util.inherits(Test, Screen);
-
-  Test.prototype.onRender = function (delta) {
-  };
-
-  var test = new Test();
-
-  game.setScreen(test);
+  game.setScreen(planet.createScreen());
 
   game.render();
 });
@@ -82,7 +27,7 @@ test.ctx.onclick = function (e) {
 };
 */
 
-},{"./colors":"/Users/jchapel/Projects/ld-30/src/colors.js","./elements/planet":"/Users/jchapel/Projects/ld-30/src/elements/planet.js","./elements/starfield":"/Users/jchapel/Projects/ld-30/src/elements/starfield.js","./events":"/Users/jchapel/Projects/ld-30/src/events.js","./game":"/Users/jchapel/Projects/ld-30/src/game.js","./menu":"/Users/jchapel/Projects/ld-30/src/menu.js","./screen":"/Users/jchapel/Projects/ld-30/src/screen.js","./utils":"/Users/jchapel/Projects/ld-30/src/utils.js","util":"/Users/jchapel/Projects/ld-30/node_modules/browserify/node_modules/util/util.js"}],"/Users/jchapel/Projects/ld-30/node_modules/browserify/node_modules/inherits/inherits_browser.js":[function(require,module,exports){
+},{"./colors":"/Users/jchapel/Projects/ld-30/src/colors.js","./elements/starfield":"/Users/jchapel/Projects/ld-30/src/elements/starfield.js","./events":"/Users/jchapel/Projects/ld-30/src/events.js","./game":"/Users/jchapel/Projects/ld-30/src/game.js","./menu":"/Users/jchapel/Projects/ld-30/src/menu.js","./screen":"/Users/jchapel/Projects/ld-30/src/screen.js","./screens/planet":"/Users/jchapel/Projects/ld-30/src/screens/planet.js","./utils":"/Users/jchapel/Projects/ld-30/src/utils.js","util":"/Users/jchapel/Projects/ld-30/node_modules/browserify/node_modules/util/util.js"}],"/Users/jchapel/Projects/ld-30/node_modules/browserify/node_modules/inherits/inherits_browser.js":[function(require,module,exports){
 if (typeof Object.create === 'function') {
   // implementation from standard node.js 'util' module
   module.exports = function inherits(ctor, superCtor) {
@@ -769,7 +714,187 @@ function hasOwnProperty(obj, prop) {
 }
 
 }).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"./support/isBuffer":"/Users/jchapel/Projects/ld-30/node_modules/browserify/node_modules/util/support/isBufferBrowser.js","_process":"/Users/jchapel/Projects/ld-30/node_modules/browserify/node_modules/process/browser.js","inherits":"/Users/jchapel/Projects/ld-30/node_modules/browserify/node_modules/inherits/inherits_browser.js"}],"/Users/jchapel/Projects/ld-30/node_modules/readable-random/lib/readable-random.js":[function(require,module,exports){
+},{"./support/isBuffer":"/Users/jchapel/Projects/ld-30/node_modules/browserify/node_modules/util/support/isBufferBrowser.js","_process":"/Users/jchapel/Projects/ld-30/node_modules/browserify/node_modules/process/browser.js","inherits":"/Users/jchapel/Projects/ld-30/node_modules/browserify/node_modules/inherits/inherits_browser.js"}],"/Users/jchapel/Projects/ld-30/node_modules/format-number/index.js":[function(require,module,exports){
+module.exports = formatter;
+
+function formatter(options) {
+  options = options || {};
+  options.negative = options.negative === 'R' ? 'R' : 'L';
+  options.negativeOut = options.negativeOut === false ? false : true;
+  options.prefix = options.prefix || '';
+  options.suffix = options.suffix || '';
+  options.separator = typeof options.separator === 'string' ? options.separator : ',';
+  options.decimal = options.decimal || '.';
+  
+  function format(number, includeUnits, separate) {
+    includeUnits = includeUnits === false ? false : true;
+    separate = separate === false ? false : true;
+    if (number || number === 0) {
+      number = '' + number;//convert number to string if it isn't already
+    } else {
+      return '';
+    }
+    var output = [];
+    var negative = number.charAt(0) === '-';
+    number = number.replace(/^\-/g, '');
+
+    if (!options.negativeOut && includeUnits) {
+      output.push(options.prefix);
+    }
+    if (negative && options.negative === 'L') {
+      output.push('-');
+    }
+    if (options.negativeOut && includeUnits) {
+      output.push(options.prefix);
+    }
+
+    number = number.split(options.decimal);
+    if (options.round != null) round(number, options.round);
+    if (options.truncate != null) number[1] = truncate(number[1], options.truncate);
+    if (options.padLeft) number[0] = padLeft(number[0], options.padLeft);
+    if (options.padRight) number[1] = padRight(number[1], options.padRight);
+    if (separate) number[0] = addSeparators(number[0], options.separator);
+    output.push(number[0]);
+    if (number[1]) {
+      output.push(options.decimal);
+      output.push(number[1]);
+    }
+
+
+    if (options.negativeOut && includeUnits) {
+      output.push(options.suffix);
+    }
+    if (negative && options.negative === 'R') {
+      output.push('-');
+    }
+    if (!options.negativeOut && includeUnits) {
+      output.push(options.suffix);
+    }
+
+    return output.join('');
+  }
+
+  format.negative = options.negative;
+  format.negativeOut = options.negativeOut;
+  format.prefix = options.prefix;
+  format.suffix = options.suffix;
+  format.separate = options.separate;
+  format.separator = options.separator;
+  format.decimal = options.decimal;
+  format.padLeft = options.padLeft;
+  format.padRight = options.padRight;
+  format.truncate = options.truncate;
+  format.round = options.round;
+
+  function unformat(number, allowedSeparators) {
+    allowedSeparators = allowedSeparators || [];
+    if (options.allowedSeparators) {
+      options.allowedSeparators.forEach(function (s) { allowedSeparators.push (s); });
+    }
+    allowedSeparators.push(options.separator);
+    number = number.replace(options.prefix, '');
+    number = number.replace(options.suffix, '');
+    var newNumber = number;
+    do {
+      number = newNumber;
+      for (var i = 0; i < allowedSeparators.length; i++) {
+        newNumber = newNumber.replace(allowedSeparators[i], '');
+      }
+    } while (newNumber != number);
+    return number;
+  }
+  format.unformat = unformat;
+
+  function validate(number, allowedSeparators) {
+    number = unformat(number, allowedSeparators);
+    number = number.split(options.decimal);
+    if (number.length > 2) {
+      return false;
+    } else if (options.truncate != null && number[1] && number[1].length > options.truncate) {
+      return false;
+    }  else if (options.round != null && number[1] && number[1].length > options.round) {
+      return false;
+    } else {
+      return /^-?\d+\.?\d*$/.test(number);
+    }
+  }
+  return format;
+}
+
+//where x is already the integer part of the number
+function addSeparators(x, separator) {
+  x += '';
+  if (!separator) return x;
+  var rgx = /(\d+)(\d{3})/;
+  while (rgx.test(x)) {
+    x = x.replace(rgx, '$1' + separator + '$2');
+  }
+  return x;
+}
+
+function padLeft(x, padding) {
+  x = x + '';
+  var buf = [];
+  while (buf.length + x.length < padding) {
+    buf.push('0');
+  }
+  return buf.join('') + x;
+}
+function padRight(x, padding) {
+  if (x) {
+    x += '';
+  } else {
+    x = '';
+  }
+  var buf = [];
+  while (buf.length + x.length < padding) {
+    buf.push('0');
+  }
+  return x + buf.join('');
+}
+function truncate(x, length) {
+  if (x) {
+    x += '';
+  }
+  if (x && x.length > length) {
+    return x.substr(0, length);
+  } else {
+    return x;
+  }
+}
+function round(number, length) {
+  if (!number[1]) return number
+  var integ = number[0] + ''
+  var decim = number[1] + ''
+  if (decim.length > length) {
+    var decider = +decim[length]
+    if (decider >= 5) {
+      decider = 10
+      decim = decim.substring(0, length)
+    } else if (length === 0) {
+      number.pop()
+      return number
+    } else {
+      number[1] = decim.substring(0, length)
+      return number
+    }
+    while (decider === 10 && decim.length) {
+      decider = (+decim[decim.length - 1]) + 1
+      decim = decim.substring(0, decim.length - 1)
+    }
+    if (decider < 10) {
+      number[1] = decim + decider
+    } else {
+      integ = (+integ) + 1
+      number[0] = integ + ''
+      number.pop()
+    }
+    return number
+  } else {
+    return number
+  }
+}
+},{}],"/Users/jchapel/Projects/ld-30/node_modules/readable-random/lib/readable-random.js":[function(require,module,exports){
 /*
  * readable-random
  * https://github.com/anthonyringoet/readable-random
@@ -887,6 +1012,7 @@ module.exports = ctx;
 var ctx = require('../ctx');
 var utils = require('../utils');
 var colors = require('../colors');
+var events = require('../events');
 var resources = require('../objects/resource-types');
 var text = require('../text');
 
@@ -894,6 +1020,8 @@ function Planet(options) {
   options = options || {};
 
   this.name = utils.randomName();
+
+  this.showName = utils.isUndefined(options.showName) ? true : false;
 
   this.point = new utils.Point(options.x, options.y);
   this.velocity = new utils.Vector(0, 0);
@@ -905,13 +1033,54 @@ function Planet(options) {
     fill: colors.random(1)
   };
 
+  this.calculateBounds();
+
   this.visible = options.visible || false;
 
   this.resources = resources.cloneAll(0);
 
+  this.mainExport = this.getRandomResource();
+  this.mainImport = this.getRandomResource(this.mainExport);
+
+  this.diameter = Math.floor(Math.random() * 1e5) + 2e4;
+  this.population = Math.floor(this.diameter * (Math.random() * 1e5)) + 1e9;
+
   this.targetPoint = null;
   this.targetSize = null;
+
+  if (options.onClick) {
+    this.on('click', options.onClick);
+  }
+
+  if (options.borderHoverColor) {
+    var outline = this.color.outline;
+    this.on('mouseover', function () {
+      this.color.outline = options.borderHoverColor;
+    });
+
+    this.on('mouseout', function () {
+      this.color.outline = outline;
+    });
+  }
 }
+
+Planet.prototype.getRandomResource = function (resource) {
+  var keys = Object.keys(this.resources);
+  var index = utils.random(0, keys.length);
+  var key = keys[index];
+  var randomResource = this.resources[key];
+  if (resource && randomResource === resource) {
+    return this.getRandomResource(resource);
+  } else {
+    return randomResource;
+  }
+};
+
+Planet.prototype.calculateBounds = function () {
+  this.position = new utils.Point(this.point.x - this.size, this.point.y - this.size);
+  this.width = this.size * 2;
+  this.height = this.size * 2;
+};
 
 Planet.prototype.render = function (delta) {
   if (!this.visible) {
@@ -925,7 +1094,10 @@ Planet.prototype.render = function (delta) {
   }
 
   this.renderObject();
-  this.renderText();
+
+  if (this.showName) {
+    this.renderText();
+  }
 };
 
 Planet.prototype.renderObject = function () {
@@ -979,9 +1151,11 @@ Planet.prototype.resize = function (size) {
   this.targetSize = size;
 };
 
+events.extendProto(Planet.prototype);
+
 module.exports = Planet;
 
-},{"../colors":"/Users/jchapel/Projects/ld-30/src/colors.js","../ctx":"/Users/jchapel/Projects/ld-30/src/ctx.js","../objects/resource-types":"/Users/jchapel/Projects/ld-30/src/objects/resource-types.js","../text":"/Users/jchapel/Projects/ld-30/src/text.js","../utils":"/Users/jchapel/Projects/ld-30/src/utils.js"}],"/Users/jchapel/Projects/ld-30/src/elements/starfield.js":[function(require,module,exports){
+},{"../colors":"/Users/jchapel/Projects/ld-30/src/colors.js","../ctx":"/Users/jchapel/Projects/ld-30/src/ctx.js","../events":"/Users/jchapel/Projects/ld-30/src/events.js","../objects/resource-types":"/Users/jchapel/Projects/ld-30/src/objects/resource-types.js","../text":"/Users/jchapel/Projects/ld-30/src/text.js","../utils":"/Users/jchapel/Projects/ld-30/src/utils.js"}],"/Users/jchapel/Projects/ld-30/src/elements/starfield.js":[function(require,module,exports){
 'use strict';
 
 var ctx = require('../ctx');
@@ -1149,6 +1323,31 @@ exports.on = function (type, options) {
   }
 };
 
+function wrapHandler(handler, context) {
+  return function () {
+    var returns = handler.apply(context, arguments);
+
+    return utils.isUndefined(returns) ? true : returns;
+  };
+}
+
+function onProto(event, handler, context) {
+  context = context || this;
+  exports.on(event, {
+    parent: this,
+    position: this.position,
+    width: this.width,
+    height: this.height,
+    handler: this.wrapHandler(handler, context)
+  });
+}
+
+exports.extendProto = function (proto) {
+  proto.wrapHandler = wrapHandler;
+  proto.on = onProto;
+  return proto;
+};
+
 ctx.onclick = eventHandler.on('click');
 ctx.onmousemove = eventHandler.on('mousemove');
 
@@ -1224,31 +1423,64 @@ var text = require('./text');
 var colors = require('./colors');
 var events = require('./events');
 var utils = require('./utils');
+var util = require('util');
 
-function MenuOptions(options) {
-  this.text = options.text;
-  this.position = new utils.Point(options.x, options.y);
+function Group(options) {
+  this.name = options.name;
+  this.items = options.items;
+  this.visible(utils.isUndefined(options.visible) ? false : options.visible);
+}
+
+Group.prototype.visible = function (visible) {
+  for (var i = 0, len = this.items.length; i < len; i += 1) {
+    this.items[i].visible = visible;
+  }
+};
+
+function Line(options, parent) {
+  this.parent = parent;
+  this.text = '' + options.text;
+  this.position = this.createRelativePoint(options.x, options.y, parent.startPosition);
   this.textColor = options.textColor;
   this.bgColor = options.bgColor;
+  this.visible = utils.isUndefined(options.visible) ? false : options.visible;
+}
+
+Line.prototype.createRelativePoint = function (x, y, parentPoint) {
+  return new utils.Point(x + parentPoint.x, y + parentPoint.y);
+};
+
+Line.prototype.render = function () {
+  if (this.visible) {
+    text(this.text, this.position.x, this.position.y, this.textColor, this.bgColor);
+  }
+};
+
+function MenuOption(options) {
+  Line.call(this, options);
 
   var textMeasure = ctx.measureText(this.text);
   this.width = textMeasure.width;
   this.height = textMeasure.height;
+
+  if (options.bgHoverColor) {
+    this.on('mouseover', function () {
+      this.bgColor = options.bgHoverColor;
+    });
+
+    this.on('mouseout', function () {
+      this.bgColor = options.bgColor;
+    });
+  }
+
+  if (options.onClick) {
+    this.on('click', options.onClick);
+  }
 }
 
-MenuOptions.prototype.render = function () {
-  text(this.text, this.position.x, this.position.y, this.textColor, this.bgColor);
-};
+events.extendProto(MenuOption.prototype);
 
-MenuOptions.prototype.on = function (event, handler, context) {
-  events.on(event, {
-    parent: this,
-    position: this.position,
-    width: this.width,
-    height: this.height,
-    handler: context ? utils.bind(context, handler) : handler
-  });
-};
+util.inherits(MenuOption, Line);
 
 function Menu(options) {
   this.title = options.title;
@@ -1260,14 +1492,13 @@ function Menu(options) {
   this.borderColor = options.borderColor || colors.grey;
   this.bgColor = options.bgColor || colors.white;
 
-  this.hasMenuOptions = false;
-  this.menuOptions = [];
+  this.children = [];
 }
 
 Menu.prototype.render = function () {
  this.renderBox();
  this.renderTitle();
- this.renderOptions();
+ this.renderChildren();
 };
 
 Menu.prototype.renderBox = function () {
@@ -1284,26 +1515,38 @@ Menu.prototype.renderTitle = function () {
   }
 };
 
-Menu.prototype.renderOptions = function () {
-  if (!this.hasMenuOptions) {
-    return;
+Menu.prototype.renderChildren = function () {
+  for (var i = 0, len = this.children.length; i < len; i += 1) {
+    this.children[i].render();
   }
+};
 
-  for (var i = 0, len = this.menuOptions.length; i < len; i += 1) {
-    this.menuOptions[i].render();
-  }
+Menu.prototype.addText = function (options) {
+  var line = new Line(options, this);
+  this.children.push(line);
+  return line;
 };
 
 Menu.prototype.addMenuOption = function (options) {
-  var menuOption = new MenuOptions(options);
-  this.menuOptions.push(menuOption);
-  this.hasMenuOptions = true;
+  var menuOption = new MenuOption(options, this);
+  this.children.push(menuOption);
   return menuOption;
 };
 
+Menu.prototype.createGroup = function (name, items) {
+  var group = new Group({
+    name: name,
+    items: items
+  });
+  return group;
+};
+
+Menu.Line = Line;
+Menu.MenuOption = MenuOption;
+
 module.exports = Menu;
 
-},{"./colors":"/Users/jchapel/Projects/ld-30/src/colors.js","./ctx":"/Users/jchapel/Projects/ld-30/src/ctx.js","./events":"/Users/jchapel/Projects/ld-30/src/events.js","./text":"/Users/jchapel/Projects/ld-30/src/text.js","./utils":"/Users/jchapel/Projects/ld-30/src/utils.js"}],"/Users/jchapel/Projects/ld-30/src/objects/resource-types.js":[function(require,module,exports){
+},{"./colors":"/Users/jchapel/Projects/ld-30/src/colors.js","./ctx":"/Users/jchapel/Projects/ld-30/src/ctx.js","./events":"/Users/jchapel/Projects/ld-30/src/events.js","./text":"/Users/jchapel/Projects/ld-30/src/text.js","./utils":"/Users/jchapel/Projects/ld-30/src/utils.js","util":"/Users/jchapel/Projects/ld-30/node_modules/browserify/node_modules/util/util.js"}],"/Users/jchapel/Projects/ld-30/src/objects/resource-types.js":[function(require,module,exports){
 'use strict';
 
 var Resource = require('./resource');
@@ -1417,10 +1660,17 @@ module.exports = Resource;
 'use strict';
 
 var ctx = require('./ctx');
+var utils = require('./utils');
 
-function Screen() {
-  if (!this.onRender) {
-    throw new Error('You must register an onRender function');
+function Screen(options) {
+  this.bgColor = options.bgColor;
+
+  ctx.bgColor(this.bgColor);
+
+  if (options.onRender) {
+    this.onRender(options.onRender);
+  } else {
+    this._onRender = function () {};
   }
 
   this.ctx = ctx;
@@ -1432,6 +1682,10 @@ Screen.prototype.init = function () {
 };
 
 Screen.prototype.remove = function () {
+};
+
+Screen.prototype.onRender = function (onRender, context) {
+  this._onRender = utils.bind(context || this, onRender);
 };
 
 Screen.prototype.dirty = function (isDirty) {
@@ -1449,7 +1703,7 @@ Screen.prototype.render = function (delta) {
   if (!this.isDirty) {
     return;
   }
-  this.onRender(delta);
+  this._onRender(delta);
   for (var i = 0; i < this.childLength; i += 1) {
     this.children[i].render(delta);
   }
@@ -1464,7 +1718,137 @@ Screen.prototype.addChild = function (child) {
 
 module.exports = Screen;
 
-},{"./ctx":"/Users/jchapel/Projects/ld-30/src/ctx.js"}],"/Users/jchapel/Projects/ld-30/src/text.js":[function(require,module,exports){
+},{"./ctx":"/Users/jchapel/Projects/ld-30/src/ctx.js","./utils":"/Users/jchapel/Projects/ld-30/src/utils.js"}],"/Users/jchapel/Projects/ld-30/src/screens/planet.js":[function(require,module,exports){
+'use strict';
+
+var Screen = require('../screen');
+var colors = require('../colors');
+
+var Starfield = require('../elements/starfield');
+var Planet = require('../elements/planet');
+var Menu = require('../menu');
+var utils = require('../utils');
+
+exports.createScreen = function () {
+
+  var screen = new Screen({
+    bgColor: colors.black
+  });
+
+  screen.field = screen.addChild(new Starfield(200));
+
+  screen.selectedPlanet = screen.addChild(new Planet({
+    visible: true,
+    x: 95,
+    y: 100,
+    size: 90,
+    showName: false
+  }));
+
+  screen.menu = screen.addChild(new Menu({
+    title: 'Planet ' + screen.selectedPlanet.name,
+    x: 190,
+    y: 10,
+    width: 120,
+    height: 180,
+    textColor: colors.white,
+    bgColor: colors.black,
+    borderColor: colors.white
+  }));
+
+  screen.flavorText = screen.menu.createGroup('flavorText', [
+    screen.menu.addText({
+      text: 'Diameter',
+      x: 5,
+      y: 20,
+      textColor: colors.grey
+    }),
+    screen.menu.addText({
+      text: utils.formatMeters(screen.selectedPlanet.diameter),
+      x: 5,
+      y: 30,
+      textColor: colors.white
+    }),
+    screen.menu.addText({
+      text: 'Population',
+      x: 5,
+      y: 40,
+      textColor: colors.grey
+    }),
+    screen.menu.addText({
+      text: utils.formatNumber(screen.selectedPlanet.population),
+      x: 5,
+      y: 50,
+      textColor: colors.white
+    }),
+    screen.menu.addText({
+      text: 'Main Export',
+      x: 5,
+      y: 60,
+      textColor: colors.grey
+    }),
+    screen.menu.addText({
+      text: screen.selectedPlanet.mainExport.name,
+      x: 5,
+      y: 70,
+      textColor: colors.white
+    }),
+    screen.menu.addText({
+      text: 'Main Import',
+      x: 5,
+      y: 80,
+      textColor: colors.grey
+    }),
+    screen.menu.addText({
+      text: screen.selectedPlanet.mainImport.name,
+      x: 5,
+      y: 90,
+      textColor: colors.white
+    })
+  ]);
+
+  screen.flavorText.visible(true);
+
+
+  /*
+    this.menu = this.addChild(new Menu({
+      title: 'Test',
+      x: 100,
+      y: 10,
+      width: 100,
+      height: 150,
+      textColor: colors.white,
+      bgColor: colors.black,
+      borderColor: colors.white
+    }));
+
+    var foo = this.menu.addMenuOption({
+      text: 'Foo',
+      x: 105,
+      y: 30,
+      textColor: colors.white,
+      bgHoverColor: colors.green,
+      onClick: function () {
+        alert('foo');
+      }
+    });
+
+
+    var bar = this.menu.addMenuOption({
+      text: 'Bar',
+      x: 105,
+      y: 40,
+      textColor: colors.white,
+      bgHoverColor: colors.purple
+    });
+
+    this.ctx.bgColor(colors.black);
+    */
+
+  return screen;
+};
+
+},{"../colors":"/Users/jchapel/Projects/ld-30/src/colors.js","../elements/planet":"/Users/jchapel/Projects/ld-30/src/elements/planet.js","../elements/starfield":"/Users/jchapel/Projects/ld-30/src/elements/starfield.js","../menu":"/Users/jchapel/Projects/ld-30/src/menu.js","../screen":"/Users/jchapel/Projects/ld-30/src/screen.js","../utils":"/Users/jchapel/Projects/ld-30/src/utils.js"}],"/Users/jchapel/Projects/ld-30/src/text.js":[function(require,module,exports){
 'use strict';
 
 var ctx = require('./ctx');
@@ -1492,15 +1876,34 @@ module.exports.onReady = function (init) {
 
 var ctx = require('./ctx');
 var readableRandom = require('readable-random');
+var format = require('format-number');
+
+var numberFormatter = format();
+var meterFormatter = format({
+  suffix: ' km'
+});
 
 exports.random = function (min, max) {
   return Math.min(Math.max(Math.floor(Math.random() * max), min), max);
 };
 
 exports.randomName = function () {
-  var size = exports.random(3, 9);
+  var size;
+  if (exports.random(0, 10) > 8) {
+    size = exports.random(3, 9);
+  } else {
+    size = exports.random(5, 9);
+  }
   var name = readableRandom.getString(size);
   return name[0].toUpperCase() + name.slice(1);
+};
+
+exports.formatMeters = function (number) {
+  return meterFormatter(number);
+};
+
+exports.formatNumber = function (number) {
+  return numberFormatter(number);
 };
 
 // Simple fast bind
@@ -1512,6 +1915,14 @@ exports.bind = function (context, fn) {
 
 exports.isUndefined = function (variable) {
   return typeof variable === 'undefined';
+};
+
+exports.argSlice = function (argObject) {
+  var args = [];
+  for (var i = 0, len = argObject.length; i < len; i += 1) {
+    args[i] = argObject[i];
+  }
+  return args;
 };
 
 exports.clearColors = function () {
@@ -1566,4 +1977,4 @@ Point.prototype.move = function (point) {
 
 exports.Point = Point;
 
-},{"./ctx":"/Users/jchapel/Projects/ld-30/src/ctx.js","readable-random":"/Users/jchapel/Projects/ld-30/node_modules/readable-random/lib/readable-random.js"}]},{},["./src/main.js"]);
+},{"./ctx":"/Users/jchapel/Projects/ld-30/src/ctx.js","format-number":"/Users/jchapel/Projects/ld-30/node_modules/format-number/index.js","readable-random":"/Users/jchapel/Projects/ld-30/node_modules/readable-random/lib/readable-random.js"}]},{},["./src/main.js"]);

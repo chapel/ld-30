@@ -118,5 +118,30 @@ exports.on = function (type, options) {
   }
 };
 
+function wrapHandler(handler, context) {
+  return function () {
+    var returns = handler.apply(context, arguments);
+
+    return utils.isUndefined(returns) ? true : returns;
+  };
+}
+
+function onProto(event, handler, context) {
+  context = context || this;
+  exports.on(event, {
+    parent: this,
+    position: this.position,
+    width: this.width,
+    height: this.height,
+    handler: this.wrapHandler(handler, context)
+  });
+}
+
+exports.extendProto = function (proto) {
+  proto.wrapHandler = wrapHandler;
+  proto.on = onProto;
+  return proto;
+};
+
 ctx.onclick = eventHandler.on('click');
 ctx.onmousemove = eventHandler.on('mousemove');
