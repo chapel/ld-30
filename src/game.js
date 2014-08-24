@@ -1,13 +1,23 @@
 'use strict';
 
 var ctx = require('./ctx');
+var text = require('./text');
 var utils = require('./utils');
 
 function Game() {
   this.screen = null;
   this.time = null;
   this.delta = null;
+
+  var self = this;
+  text.onReady(function () {
+    self.init();
+  });
 }
+
+Game.prototype.onReady = function (init) {
+  this.init = init || function () {};
+};
 
 Game.prototype.setScreen = function (screen) {
   if (this.screen) {

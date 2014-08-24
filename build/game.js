@@ -7,59 +7,82 @@ var util = require('util');
 var utils = require('./utils');
 var colors = require('./colors');
 var Screen = require('./screen');
+var events = require('./events');
 var Menu = require('./menu');
 var Planet = require('./elements/planet');
 var Starfield = require('./elements/starfield');
 
-function Test() {
-  Screen.call(this, arguments);
-
-  this.field = this.addChild(new Starfield(200));
-  this.planet = this.addChild(new Planet({
-    type: 'normal',
-    visible: true,
-    x: 50,
-    y: 50,
-    size: utils.random(10, 20)
-  }));
-  this.planet2 = this.addChild(new Planet({
-    type: 'normal',
-    visible: true,
-    x: 200,
-    y: 50,
-    size: utils.random(10, 20)
-  }));
-
-  this.menu = this.addChild(new Menu({
-    title: 'Test',
-    x: 100,
-    y: 10,
-    width: 100,
-    height: 150
-  }));
-
-  this.ctx.bgColor(colors.black);
-}
-
-util.inherits(Test, Screen);
-
-Test.prototype.onRender = function (delta) {
-};
-
-var test = new Test();
 var game = new Game();
 
-game.setScreen(test);
+game.onReady(function () {
+  function Test() {
+    Screen.call(this, arguments);
 
-game.render();
+    this.field = this.addChild(new Starfield(200));
+    this.planet = this.addChild(new Planet({
+      type: 'normal',
+      visible: true,
+      x: 50,
+      y: 50,
+      size: utils.random(10, 20)
+    }));
+    this.planet2 = this.addChild(new Planet({
+      type: 'normal',
+      visible: true,
+      x: 200,
+      y: 50,
+      size: utils.random(10, 20)
+    }));
 
+    this.menu = this.addChild(new Menu({
+      title: 'Test',
+      x: 100,
+      y: 10,
+      width: 100,
+      height: 150,
+      textColor: colors.white,
+      bgColor: colors.black,
+      borderColor: colors.white
+    }));
+
+    var option = this.menu.addMenuOption({
+      text: 'Foo',
+      x: 105,
+      y: 20,
+      textColor: colors.white
+    });
+
+    option.on('mouseover', function (e) {
+      option.bgColor = colors.green;
+    }, this);
+
+    option.on('mouseout', function (e) {
+      option.bgColor = colors.black;
+    }, this);
+
+    this.ctx.bgColor(colors.black);
+  }
+
+  util.inherits(Test, Screen);
+
+  Test.prototype.onRender = function (delta) {
+  };
+
+  var test = new Test();
+
+  game.setScreen(test);
+
+  game.render();
+});
+/*
 test.ctx.onclick = function (e) {
   test.planet.move(e.x, e.y, 80);
   test.planet2.move(e.x, e.y, 80);
   //test.planet.resize(test.planet.size + 5);
 };
+*/
 
-},{"./colors":"/Users/jchapel/Projects/ld-30/src/colors.js","./elements/planet":"/Users/jchapel/Projects/ld-30/src/elements/planet.js","./elements/starfield":"/Users/jchapel/Projects/ld-30/src/elements/starfield.js","./game":"/Users/jchapel/Projects/ld-30/src/game.js","./menu":"/Users/jchapel/Projects/ld-30/src/menu.js","./screen":"/Users/jchapel/Projects/ld-30/src/screen.js","./utils":"/Users/jchapel/Projects/ld-30/src/utils.js","util":"/Users/jchapel/Projects/ld-30/node_modules/browserify/node_modules/util/util.js"}],"/Users/jchapel/Projects/ld-30/node_modules/browserify/node_modules/inherits/inherits_browser.js":[function(require,module,exports){
+},{"./colors":"/Users/jchapel/Projects/ld-30/src/colors.js","./elements/planet":"/Users/jchapel/Projects/ld-30/src/elements/planet.js","./elements/starfield":"/Users/jchapel/Projects/ld-30/src/elements/starfield.js","./events":"/Users/jchapel/Projects/ld-30/src/events.js","./game":"/Users/jchapel/Projects/ld-30/src/game.js","./menu":"/Users/jchapel/Projects/ld-30/src/menu.js","./screen":"/Users/jchapel/Projects/ld-30/src/screen.js","./utils":"/Users/jchapel/Projects/ld-30/src/utils.js","util":"/Users/jchapel/Projects/ld-30/node_modules/browserify/node_modules/util/util.js"}],"/Users/jchapel/Projects/ld-30/node_modules/browserify/node_modules/inherits/inherits_browser.js":[function(require,module,exports){
 if (typeof Object.create === 'function') {
   // implementation from standard node.js 'util' module
   module.exports = function inherits(ctor, superCtor) {
@@ -1005,17 +1028,151 @@ Field.prototype.render = function () {
 
 module.exports = Field;
 
-},{"../colors":"/Users/jchapel/Projects/ld-30/src/colors.js","../ctx":"/Users/jchapel/Projects/ld-30/src/ctx.js","../utils":"/Users/jchapel/Projects/ld-30/src/utils.js"}],"/Users/jchapel/Projects/ld-30/src/game.js":[function(require,module,exports){
+},{"../colors":"/Users/jchapel/Projects/ld-30/src/colors.js","../ctx":"/Users/jchapel/Projects/ld-30/src/ctx.js","../utils":"/Users/jchapel/Projects/ld-30/src/utils.js"}],"/Users/jchapel/Projects/ld-30/src/events.js":[function(require,module,exports){
 'use strict';
 
 var ctx = require('./ctx');
+var utils = require('./utils');
+
+function EventHandler() {
+  this.events = {
+    click: [],
+    mouseover: [],
+    mouseout: [],
+    mousemove: [],
+    keypress: [],
+  };
+
+  this.mouseEvents = [
+    'click',
+    'mouseover',
+    'mouseout'
+  ];
+}
+
+EventHandler.prototype.isMouseEvent = function (type) {
+  return this.mouseEvents.indexOf(type) !== -1;
+};
+
+EventHandler.prototype.addEvent = function (event) {
+  this.events[event.type].push(event);
+};
+
+EventHandler.prototype.on = function (type) {
+  var self = this;
+  return function (e) {
+    var events;
+    if (type === 'mousemove') {
+      events = [].concat(self.events.mouseover, self.events.mouseout, self.events.mousemove);
+    } else {
+      events = self.events[type];
+    }
+
+    if (!events || !events.length) {
+      return;
+    }
+
+    for (var i = 0, len = events.length; i < len; i += 1) {
+      if (events[i].shouldHandle(e)) {
+        if (!events[i].handler(e)) {
+          break;
+        }
+      }
+    }
+  };
+};
+
+function KeyEvent(options) {
+  this.type = options.type;
+  this.handler = options.handler;
+}
+
+KeyEvent.prototype.shouldHandle = function (e) {
+  return true;
+};
+
+function MouseEvent(options) {
+  this.type = options.type;
+  this.handler = options.handler;
+  this.parent = options.parent;
+
+  this.position = options.position;
+  this.width = options.width;
+  this.height = options.height;
+
+  this.left = this.position.x;
+  this.top = this.position.y;
+  this.right = this.left + this.width;
+  this.bottom = this.top + this.height;
+
+  this.parent.mouseOver = false;
+}
+
+MouseEvent.prototype.shouldHandle = function (e) {
+  var shouldHandle = false;
+  var isWithin = this.isWithin(e);
+
+  if (this.type === 'mouseover') {
+
+    shouldHandle = isWithin;
+    this.parent.mouseOver = true;
+
+  } else if (this.type === 'mouseout') {
+
+    if (this.parent.mouseOver && !isWithin) {
+      shouldHandle = true;
+      this.parent.mouseOver = false;
+    }
+
+  } else {
+    shouldHandle = isWithin;
+  }
+
+  return shouldHandle;
+};
+
+MouseEvent.prototype.isWithin = function (e) {
+  return this.right >= e.x &&
+         this.left <= e.x &&
+         this.bottom >= e.y &&
+         this.top <= e.y;
+};
+
+var eventHandler = new EventHandler();
+
+exports.on = function (type, options) {
+  options.type = type;
+  if (eventHandler.isMouseEvent(type)) {
+    eventHandler.addEvent(new MouseEvent(options));
+  } else {
+    eventHandler.addEvent(new KeyEvent(options));
+  }
+};
+
+ctx.onclick = eventHandler.on('click');
+ctx.onmousemove = eventHandler.on('mousemove');
+
+},{"./ctx":"/Users/jchapel/Projects/ld-30/src/ctx.js","./utils":"/Users/jchapel/Projects/ld-30/src/utils.js"}],"/Users/jchapel/Projects/ld-30/src/game.js":[function(require,module,exports){
+'use strict';
+
+var ctx = require('./ctx');
+var text = require('./text');
 var utils = require('./utils');
 
 function Game() {
   this.screen = null;
   this.time = null;
   this.delta = null;
+
+  var self = this;
+  text.onReady(function () {
+    self.init();
+  });
 }
+
+Game.prototype.onReady = function (init) {
+  this.init = init || function () {};
+};
 
 Game.prototype.setScreen = function (screen) {
   if (this.screen) {
@@ -1059,13 +1216,39 @@ Game.prototype.raf = function () {
 
 module.exports = Game;
 
-},{"./ctx":"/Users/jchapel/Projects/ld-30/src/ctx.js","./utils":"/Users/jchapel/Projects/ld-30/src/utils.js"}],"/Users/jchapel/Projects/ld-30/src/menu.js":[function(require,module,exports){
+},{"./ctx":"/Users/jchapel/Projects/ld-30/src/ctx.js","./text":"/Users/jchapel/Projects/ld-30/src/text.js","./utils":"/Users/jchapel/Projects/ld-30/src/utils.js"}],"/Users/jchapel/Projects/ld-30/src/menu.js":[function(require,module,exports){
 'use strict';
 
 var ctx = require('./ctx');
 var text = require('./text');
 var colors = require('./colors');
+var events = require('./events');
 var utils = require('./utils');
+
+function MenuOptions(options) {
+  this.text = options.text;
+  this.position = new utils.Point(options.x, options.y);
+  this.textColor = options.textColor;
+  this.bgColor = options.bgColor;
+
+  var textMeasure = ctx.measureText(this.text);
+  this.width = textMeasure.width;
+  this.height = textMeasure.height;
+}
+
+MenuOptions.prototype.render = function () {
+  text(this.text, this.position.x, this.position.y, this.textColor, this.bgColor);
+};
+
+MenuOptions.prototype.on = function (event, handler, context) {
+  events.on(event, {
+    parent: this,
+    position: this.position,
+    width: this.width,
+    height: this.height,
+    handler: context ? utils.bind(context, handler) : handler
+  });
+};
 
 function Menu(options) {
   this.title = options.title;
@@ -1073,12 +1256,18 @@ function Menu(options) {
   this.startPosition = new utils.Point(options.x, options.y);
   this.width = options.width;
   this.height = options.height;
+  this.textColor = options.textColor || colors.black;
   this.borderColor = options.borderColor || colors.grey;
   this.bgColor = options.bgColor || colors.white;
+
+  this.hasMenuOptions = false;
+  this.menuOptions = [];
 }
 
 Menu.prototype.render = function () {
  this.renderBox();
+ this.renderTitle();
+ this.renderOptions();
 };
 
 Menu.prototype.renderBox = function () {
@@ -1089,9 +1278,32 @@ Menu.prototype.renderBox = function () {
   utils.clearColors();
 };
 
+Menu.prototype.renderTitle = function () {
+  if (this.title) {
+    text(this.title, this.startPosition.x + 5, this.startPosition.y + 5, this.textColor, null);
+  }
+};
+
+Menu.prototype.renderOptions = function () {
+  if (!this.hasMenuOptions) {
+    return;
+  }
+
+  for (var i = 0, len = this.menuOptions.length; i < len; i += 1) {
+    this.menuOptions[i].render();
+  }
+};
+
+Menu.prototype.addMenuOption = function (options) {
+  var menuOption = new MenuOptions(options);
+  this.menuOptions.push(menuOption);
+  this.hasMenuOptions = true;
+  return menuOption;
+};
+
 module.exports = Menu;
 
-},{"./colors":"/Users/jchapel/Projects/ld-30/src/colors.js","./ctx":"/Users/jchapel/Projects/ld-30/src/ctx.js","./text":"/Users/jchapel/Projects/ld-30/src/text.js","./utils":"/Users/jchapel/Projects/ld-30/src/utils.js"}],"/Users/jchapel/Projects/ld-30/src/objects/resource-types.js":[function(require,module,exports){
+},{"./colors":"/Users/jchapel/Projects/ld-30/src/colors.js","./ctx":"/Users/jchapel/Projects/ld-30/src/ctx.js","./events":"/Users/jchapel/Projects/ld-30/src/events.js","./text":"/Users/jchapel/Projects/ld-30/src/text.js","./utils":"/Users/jchapel/Projects/ld-30/src/utils.js"}],"/Users/jchapel/Projects/ld-30/src/objects/resource-types.js":[function(require,module,exports){
 'use strict';
 
 var Resource = require('./resource');
@@ -1259,20 +1471,20 @@ var ctx = require('./ctx');
 var colors = require('./colors');
 var utils = require('./utils');
 
-var fontReady = false;
-ctx.addFont(window.fontRetro, function () {
-  ctx.font('retro');
-  fontReady = true;
-});
-
 module.exports = function (text, x, y, penColor, fillColor) {
-  if (fontReady) {
-    ctx
-      .penColor(penColor)
-      .fillColor(fillColor || colors.black)
-      .text(text, Math.floor(x), Math.floor(y));
-    utils.clearColors();
-  }
+  fillColor = utils.isUndefined(fillColor) ? colors.black : fillColor;
+  ctx
+    .penColor(penColor)
+    .fillColor(fillColor)
+    .text(text, Math.floor(x), Math.floor(y));
+  utils.clearColors();
+};
+
+module.exports.onReady = function (init) {
+  ctx.addFont(window.fontRetro, function () {
+    ctx.font('retro');
+    init();
+  });
 };
 
 },{"./colors":"/Users/jchapel/Projects/ld-30/src/colors.js","./ctx":"/Users/jchapel/Projects/ld-30/src/ctx.js","./utils":"/Users/jchapel/Projects/ld-30/src/utils.js"}],"/Users/jchapel/Projects/ld-30/src/utils.js":[function(require,module,exports){
@@ -1296,6 +1508,10 @@ exports.bind = function (context, fn) {
   return function () {
     return fn.apply(context, arguments);
   };
+};
+
+exports.isUndefined = function (variable) {
+  return typeof variable === 'undefined';
 };
 
 exports.clearColors = function () {

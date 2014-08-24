@@ -20,6 +20,10 @@ exports.bind = function (context, fn) {
   };
 };
 
+exports.isUndefined = function (variable) {
+  return typeof variable === 'undefined';
+};
+
 exports.clearColors = function () {
   ctx
     .penColor(null)
