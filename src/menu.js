@@ -108,13 +108,20 @@ function Menu(options) {
   this.borderColor = options.borderColor || colors.grey;
   this.bgColor = options.bgColor || colors.white;
 
+  this.visible(utils.isUndefined(options.visible) ? false : options.visible);
   this.children = [];
 }
 
+Menu.prototype.visible = function (toggle) {
+  this._visible = toggle;
+};
+
 Menu.prototype.render = function () {
- this.renderBox();
- this.renderTitle();
- this.renderChildren();
+  if (this._visible) {
+    this.renderBox();
+    this.renderTitle();
+    this.renderChildren();
+  }
 };
 
 Menu.prototype.renderBox = function () {

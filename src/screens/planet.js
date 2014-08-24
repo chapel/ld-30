@@ -7,6 +7,7 @@ var Starfield = require('../elements/starfield');
 var Planet = require('../elements/planet');
 var FlavorText = require('./planet-flavor-text');
 var TradeMenu = require('./planet-trade-menu');
+var TradeModal = require('./planet-trade-modal');
 var Menu = require('../menu');
 
 exports.createScreen = function () {
@@ -36,6 +37,7 @@ exports.createScreen = function () {
     y: 10,
     width: 120,
     height: 180,
+    visible: true,
     textColor: primary,
     bgColor: colors.black,
     borderColor: secondary
@@ -59,14 +61,27 @@ exports.createScreen = function () {
     primary: primary,
     secondary: secondary,
     bottom: bottom,
+    onClickResource: function (resource) {
+      screen.tradeModal.showModal(resource);
+    },
     onClickBack: function () {
       this.toggle(false);
       screen.flavorText.toggle(true);
     }
   });
 
+  screen.tradeModal = new TradeModal({
+    screen: screen,
+    primary: primary,
+    secondary: secondary,
+    onClickBack: function () {
+      this.toggle(false);
+    }
+  });
+
   screen.flavorText.create();
   screen.tradeMenu.create();
+  screen.tradeModal.create();
 
   screen.onInit(function () {
     screen.flavorText.toggle(true);

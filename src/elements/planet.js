@@ -77,10 +77,13 @@ Planet.prototype.randomizeResourceAmounts = function () {
     resource = this.resources[keys[i]];
     if (resource === this.mainExport) {
       resource.amount = utils.random(utils.random(11, 100), utils.random(414, 602));
+      resource.weight(Math.random() * 1);
     } else if (resource === this.mainImport) {
       resource.amount = utils.random(utils.random(0, 14), utils.random(78, 109));
+      resource.weight(Math.random() * 5);
     } else {
       resource.amount = utils.random(utils.random(11, 30), utils.random(96, 234));
+      resource.weight(Math.random() * 2.5);
     }
   }
 

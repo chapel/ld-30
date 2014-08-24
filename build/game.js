@@ -1168,10 +1168,13 @@ Planet.prototype.randomizeResourceAmounts = function () {
     resource = this.resources[keys[i]];
     if (resource === this.mainExport) {
       resource.amount = utils.random(utils.random(11, 100), utils.random(414, 602));
+      resource.weight(Math.random() * 1);
     } else if (resource === this.mainImport) {
       resource.amount = utils.random(utils.random(0, 14), utils.random(78, 109));
+      resource.weight(Math.random() * 5);
     } else {
       resource.amount = utils.random(utils.random(11, 30), utils.random(96, 234));
+      resource.weight(Math.random() * 2.5);
     }
   }
 
@@ -1667,13 +1670,20 @@ function Menu(options) {
   this.borderColor = options.borderColor || colors.grey;
   this.bgColor = options.bgColor || colors.white;
 
+  this.visible(utils.isUndefined(options.visible) ? false : options.visible);
   this.children = [];
 }
 
+Menu.prototype.visible = function (toggle) {
+  this._visible = toggle;
+};
+
 Menu.prototype.render = function () {
- this.renderBox();
- this.renderTitle();
- this.renderChildren();
+  if (this._visible) {
+    this.renderBox();
+    this.renderTitle();
+    this.renderChildren();
+  }
 };
 
 Menu.prototype.renderBox = function () {
@@ -2046,6 +2056,12 @@ function TradeMenu(options) {
   } else {
     this.onClickBack(function () {});
   }
+
+  if (options.onClickResource) {
+    this.onClickResource(options.onClickResource);
+  } else {
+    this.onClickResource(function () {});
+  }
 }
 
 TradeMenu.prototype.create = function () {
@@ -2104,11 +2120,16 @@ TradeMenu.prototype.createMenuItem = function (resource, y, toggle) {
   var name = truncate(resource.name, 12);
   var resourceMenu = this.screen.menu.addMenuOption({
     text: name,
-      x: 5,
-      y: y,
-      textColor: toggle ? this.secondary : this.primary,
-      bgHoverColor: toggle ? this.primary : this.secondary
+    x: 5,
+    y: y,
+    textColor: toggle ? this.secondary : this.primary,
+    bgHoverColor: toggle ? this.primary : this.secondary
   });
+
+  resourceMenu.on('click', function () {
+    this.clickResource(resource);
+  }, this);
+
   resourceMenu.on('mouseover', function () {
     this.text = resource.name;
   });
@@ -2130,6 +2151,9 @@ TradeMenu.prototype.createAmount = function (resource, y, toggle) {
   return resourceAmount;
 };
 
+TradeMenu.prototype.onClickResource = function (handler, context) {
+  this.clickResource = utils.bind(context || this, handler);
+};
 
 TradeMenu.prototype.toggle = function (toggle) {
   this.list.visible(toggle);
@@ -2141,7 +2165,56 @@ TradeMenu.prototype.onClickBack = function (handler, context) {
 
 module.exports = TradeMenu;
 
-},{"../utils":"/Users/jchapel/Projects/ld-30/src/utils.js","truncate":"/Users/jchapel/Projects/ld-30/node_modules/truncate/truncate.js"}],"/Users/jchapel/Projects/ld-30/src/screens/planet.js":[function(require,module,exports){
+},{"../utils":"/Users/jchapel/Projects/ld-30/src/utils.js","truncate":"/Users/jchapel/Projects/ld-30/node_modules/truncate/truncate.js"}],"/Users/jchapel/Projects/ld-30/src/screens/planet-trade-modal.js":[function(require,module,exports){
+'use strict';
+
+var utils = require('../utils');
+var colors = require('../colors');
+var Menu = require('../menu');
+
+function TradeModal(options) {
+  this.screen = options.screen;
+  this.primary = options.primary;
+  this.secondary = options.secondary;
+
+  if (options.onClickBack) {
+    this.onClickBack(options.onClickBack);
+  } else {
+    this.onClickBack(function () {});
+  }
+}
+
+TradeModal.prototype.create = function () {
+  var screen = this.screen;
+
+  this.modal = screen.addChild(new Menu({
+    title: 'How many?',
+    x: (320 - 100)/2,
+    y: (200 - 100)/2,
+    width: 100,
+    height: 100,
+    textColor: this.primary,
+    bgColor: colors.black,
+    borderColor: this.secondary
+  }));
+};
+
+TradeModal.prototype.toggle = function (toggle) {
+  this.modal.visible(toggle);
+};
+
+TradeModal.prototype.showModal = function (resource) {
+  this.resource = resource;
+  this.toggle(true);
+};
+
+TradeModal.prototype.onClickBack = function (handler, context) {
+  this.clickBack = utils.bind(context || this, handler);
+};
+
+module.exports = TradeModal;
+
+},{"../colors":"/Users/jchapel/Projects/ld-30/src/colors.js","../menu":"/Users/jchapel/Projects/ld-30/src/menu.js","../utils":"/Users/jchapel/Projects/ld-30/src/utils.js"}],"/Users/jchapel/Projects/ld-30/src/screens/planet.js":[function(require,module,exports){
 'use strict';
 
 var Screen = require('../screen');
@@ -2151,6 +2224,7 @@ var Starfield = require('../elements/starfield');
 var Planet = require('../elements/planet');
 var FlavorText = require('./planet-flavor-text');
 var TradeMenu = require('./planet-trade-menu');
+var TradeModal = require('./planet-trade-modal');
 var Menu = require('../menu');
 
 exports.createScreen = function () {
@@ -2180,6 +2254,7 @@ exports.createScreen = function () {
     y: 10,
     width: 120,
     height: 180,
+    visible: true,
     textColor: primary,
     bgColor: colors.black,
     borderColor: secondary
@@ -2203,14 +2278,27 @@ exports.createScreen = function () {
     primary: primary,
     secondary: secondary,
     bottom: bottom,
+    onClickResource: function (resource) {
+      screen.tradeModal.showModal(resource);
+    },
     onClickBack: function () {
       this.toggle(false);
       screen.flavorText.toggle(true);
     }
   });
 
+  screen.tradeModal = new TradeModal({
+    screen: screen,
+    primary: primary,
+    secondary: secondary,
+    onClickBack: function () {
+      this.toggle(false);
+    }
+  });
+
   screen.flavorText.create();
   screen.tradeMenu.create();
+  screen.tradeModal.create();
 
   screen.onInit(function () {
     screen.flavorText.toggle(true);
@@ -2224,7 +2312,7 @@ exports.createScreen = function () {
   return screen;
 };
 
-},{"../colors":"/Users/jchapel/Projects/ld-30/src/colors.js","../elements/planet":"/Users/jchapel/Projects/ld-30/src/elements/planet.js","../elements/starfield":"/Users/jchapel/Projects/ld-30/src/elements/starfield.js","../menu":"/Users/jchapel/Projects/ld-30/src/menu.js","../screen":"/Users/jchapel/Projects/ld-30/src/screen.js","./planet-flavor-text":"/Users/jchapel/Projects/ld-30/src/screens/planet-flavor-text.js","./planet-trade-menu":"/Users/jchapel/Projects/ld-30/src/screens/planet-trade-menu.js"}],"/Users/jchapel/Projects/ld-30/src/text.js":[function(require,module,exports){
+},{"../colors":"/Users/jchapel/Projects/ld-30/src/colors.js","../elements/planet":"/Users/jchapel/Projects/ld-30/src/elements/planet.js","../elements/starfield":"/Users/jchapel/Projects/ld-30/src/elements/starfield.js","../menu":"/Users/jchapel/Projects/ld-30/src/menu.js","../screen":"/Users/jchapel/Projects/ld-30/src/screen.js","./planet-flavor-text":"/Users/jchapel/Projects/ld-30/src/screens/planet-flavor-text.js","./planet-trade-menu":"/Users/jchapel/Projects/ld-30/src/screens/planet-trade-menu.js","./planet-trade-modal":"/Users/jchapel/Projects/ld-30/src/screens/planet-trade-modal.js"}],"/Users/jchapel/Projects/ld-30/src/text.js":[function(require,module,exports){
 'use strict';
 
 var ctx = require('./ctx');

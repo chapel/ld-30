@@ -14,6 +14,12 @@ function TradeMenu(options) {
   } else {
     this.onClickBack(function () {});
   }
+
+  if (options.onClickResource) {
+    this.onClickResource(options.onClickResource);
+  } else {
+    this.onClickResource(function () {});
+  }
 }
 
 TradeMenu.prototype.create = function () {
@@ -72,11 +78,16 @@ TradeMenu.prototype.createMenuItem = function (resource, y, toggle) {
   var name = truncate(resource.name, 12);
   var resourceMenu = this.screen.menu.addMenuOption({
     text: name,
-      x: 5,
-      y: y,
-      textColor: toggle ? this.secondary : this.primary,
-      bgHoverColor: toggle ? this.primary : this.secondary
+    x: 5,
+    y: y,
+    textColor: toggle ? this.secondary : this.primary,
+    bgHoverColor: toggle ? this.primary : this.secondary
   });
+
+  resourceMenu.on('click', function () {
+    this.clickResource(resource);
+  }, this);
+
   resourceMenu.on('mouseover', function () {
     this.text = resource.name;
   });
@@ -98,6 +109,9 @@ TradeMenu.prototype.createAmount = function (resource, y, toggle) {
   return resourceAmount;
 };
 
+TradeMenu.prototype.onClickResource = function (handler, context) {
+  this.clickResource = utils.bind(context || this, handler);
+};
 
 TradeMenu.prototype.toggle = function (toggle) {
   this.list.visible(toggle);
