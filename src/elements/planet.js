@@ -86,7 +86,12 @@ Planet.prototype.randomizeResourceAmounts = function () {
       resource.weight(Math.random() * 2.5);
     }
   }
+};
 
+Planet.prototype.applyChanges = function (changes) {
+  var resource = changes.resource;
+  resource.subtract(changes.amount);
+  this.resources[resource.id] = resource;
 };
 
 Planet.prototype.calculateBounds = function () {

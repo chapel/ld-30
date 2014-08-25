@@ -1177,7 +1177,12 @@ Planet.prototype.randomizeResourceAmounts = function () {
       resource.weight(Math.random() * 2.5);
     }
   }
+};
 
+Planet.prototype.applyChanges = function (changes) {
+  var resource = changes.resource;
+  resource.subtract(changes.amount);
+  this.resources[resource.id] = resource;
 };
 
 Planet.prototype.calculateBounds = function () {
@@ -1901,6 +1906,8 @@ exports.cloneAll = function () {
 },{"./resource":"/Users/jchapel/Projects/ld-30/src/objects/resource.js"}],"/Users/jchapel/Projects/ld-30/src/objects/resource.js":[function(require,module,exports){
 'use strict';
 
+var utils = require('../utils');
+
 function Resource(options) {
   this.id = options.id;
   this.name = options.name;
@@ -1908,6 +1915,8 @@ function Resource(options) {
   this.baseValue = options.baseValue;
   this.valueWeight = options.valueWeight || 1;
   this.amount = options.amount || 1;
+
+  this.events = [];
 }
 
 Resource.prototype.value = function () {
@@ -1920,10 +1929,24 @@ Resource.prototype.weight = function (valueWeight) {
 
 Resource.prototype.add = function (amount) {
   this.amount += amount;
+  this.triggerChange();
 };
 
 Resource.prototype.subtract = function (amount) {
   this.add(-amount);
+  this.triggerChange();
+};
+
+Resource.prototype.onChange = function (handler, context) {
+  this.events.push({
+    trigger: utils.bind(context || this, handler)
+  });
+};
+
+Resource.prototype.triggerChange = function () {
+  for (var i = 0, len = this.events.length; i < len; i += 1) {
+    this.events[i].trigger();
+  }
 };
 
 Resource.prototype.totalValue = function () {
@@ -1951,7 +1974,7 @@ Resource.prototype.toJSON = function () {
 
 module.exports = Resource;
 
-},{}],"/Users/jchapel/Projects/ld-30/src/screen.js":[function(require,module,exports){
+},{"../utils":"/Users/jchapel/Projects/ld-30/src/utils.js"}],"/Users/jchapel/Projects/ld-30/src/screen.js":[function(require,module,exports){
 'use strict';
 
 var ctx = require('./ctx');
@@ -2063,37 +2086,37 @@ FlavorText.prototype.create = function () {
     screen.menu.addText({
       text: 'Population',
       x: 5,
-      y: 40,
+      y: 45,
       textColor: this.secondary
     }),
     screen.menu.addText({
       text: utils.formatNumber(screen.planet.population),
       x: 5,
-      y: 50,
+      y: 55,
       textColor: this.primary
     }),
     screen.menu.addText({
       text: 'Main Export',
       x: 5,
-      y: 60,
+      y: 70,
       textColor: this.secondary
     }),
     screen.menu.addText({
       text: screen.planet.mainExport.name,
       x: 5,
-      y: 70,
+      y: 80,
       textColor: this.primary
     }),
     screen.menu.addText({
       text: 'Main Import',
       x: 5,
-      y: 80,
+      y: 95,
       textColor: this.secondary
     }),
     screen.menu.addText({
       text: screen.planet.mainImport.name,
       x: 5,
-      y: 90,
+      y: 105,
       textColor: this.primary
     })
   ]);
@@ -2246,6 +2269,10 @@ TradeMenu.prototype.createAmount = function (resource, y, toggle) {
     bgHoverColor: toggle ? this.primary : this.secondary,
     align: 'right'
   });
+
+  resource.onChange(function () {
+    resourceAmount.setText(resource.amount);
+  });
   return resourceAmount;
 };
 
@@ -2275,10 +2302,10 @@ function TradeModal(options) {
   this.primary = options.primary;
   this.secondary = options.secondary;
 
-  if (options.onClickBack) {
-    this.onClickBack(options.onClickBack);
+  if (options.onClickConfirm) {
+    this.onClickConfirm(options.onClickConfirm);
   } else {
-    this.onClickBack(function () {});
+    this.onClickConfirm(function () {});
   }
 }
 
@@ -2288,9 +2315,9 @@ TradeModal.prototype.create = function () {
   var modal = this.modal = screen.addChild(new Menu({
     title: '',
     x: Math.floor((320 - 160)/6),
-    y: Math.floor((200 - 100)/2),
+    y: Math.floor((200 - 105)/2),
     width: 160,
-    height: 100,
+    height: 105,
     textColor: this.primary,
     bgColor: colors.black,
     borderColor: this.secondary
@@ -2328,7 +2355,7 @@ TradeModal.prototype.create = function () {
       textColor: this.secondary
     }),
     modal.addText({
-      text: 'Totals',
+      text: 'Total',
       x: 10,
       y: 79,
       textColor: this.secondary
@@ -2383,7 +2410,10 @@ TradeModal.prototype.create = function () {
       totalAmount.setText(amount);
       totalPrice.setText(-amount * buyPrice.getPrice());
       sellInput.setAmount(0);
-    }
+    },
+    isValid: utils.bind(this, function (amount) {
+      return this.resource.amount >= amount;
+    })
   });
 
   var sellInput = this.sellInput = this.createInput({
@@ -2393,7 +2423,10 @@ TradeModal.prototype.create = function () {
       totalAmount.setText(-amount);
       totalPrice.setText(amount * sellPrice.getPrice());
       buyInput.setAmount(0);
-    }
+    },
+    isValid: utils.bind(this, function (amount) {
+      return true;
+    })
   });
 
   this.inputs = this.modal.createGroup('inputs', [
@@ -2402,6 +2435,42 @@ TradeModal.prototype.create = function () {
     this.totalAmount
   ]);
 
+  this.buttons = modal.createGroup('buttons', [
+    modal.addMenuOption({
+      text: 'Cancel',
+      x: 70,
+      y: 92,
+      textColor: this.primary,
+      bgHoverColor: this.secondary,
+      onClick: utils.bind(this, function () {
+        this.toggle(false);
+      })
+    }),
+    modal.addMenuOption({
+      text: 'Confirm',
+      x: 112,
+      y: 92,
+      textColor: this.primary,
+      bgHoverColor: this.secondary,
+      onClick: utils.bind(this, function () {
+        var amount = this.totalAmount.getPrice();
+        var price = this.totalPrice.getPrice();
+        this.clickConfirm({
+          hasChange: amount !== 0 && price !== 0,
+          resource: this.resource,
+          amount: amount,
+          price: price
+        });
+      })
+    })
+  ]);
+};
+
+TradeModal.prototype.reset = function () {
+  this.totalAmount.setText(0);
+  this.totalPrice.setText(0);
+  this.buyInput.setAmount(0);
+  this.sellInput.setAmount(0);
 };
 
 TradeModal.prototype.createPrice = function (options) {
@@ -2425,6 +2494,15 @@ TradeModal.prototype.createPrice = function (options) {
 };
 
 TradeModal.prototype.createInput = function (options) {
+  var isValid;
+  if (options.isValid) {
+    isValid = options.isValid;
+  } else {
+    isValid = function () {
+      return true;
+    };
+  }
+
   var input = this.modal.addChildMenu({
     x: options.x,
     y: options.y,
@@ -2453,6 +2531,9 @@ TradeModal.prototype.createInput = function (options) {
     visible: true,
     onClick: function () {
       var number = input.getAmount() + 1;
+      if (!isValid(number)) {
+        return;
+      }
       amount.setText(number);
       if (options.onClick) {
         options.onClick(number);
@@ -2495,9 +2576,12 @@ TradeModal.prototype.toggle = function (toggle) {
   this.interface.visible(toggle);
   this.prices.visible(toggle);
   this.inputs.visible(toggle);
+  this.buttons.visible(toggle);
 };
 
 TradeModal.prototype.showModal = function (resource) {
+  this.reset();
+
   this.resource = resource;
 
   this.modal.title = 'Trade ' + this.resource.name;
@@ -2511,8 +2595,8 @@ TradeModal.prototype.showModal = function (resource) {
   this.toggle(true);
 };
 
-TradeModal.prototype.onClickBack = function (handler, context) {
-  this.clickBack = utils.bind(context || this, handler);
+TradeModal.prototype.onClickConfirm = function (handler, context) {
+  this.clickConfirm = utils.bind(context || this, handler);
 };
 
 module.exports = TradeModal;
@@ -2595,7 +2679,10 @@ exports.createScreen = function () {
     screen: screen,
     primary: primary,
     secondary: secondary,
-    onClickBack: function () {
+    onClickConfirm: function (changes) {
+      if (changes.hasChange) {
+        screen.planet.applyChanges(changes);
+      }
       this.toggle(false);
     }
   });

@@ -75,7 +75,10 @@ exports.createScreen = function () {
     screen: screen,
     primary: primary,
     secondary: secondary,
-    onClickBack: function () {
+    onClickConfirm: function (changes) {
+      if (changes.hasChange) {
+        screen.planet.applyChanges(changes);
+      }
       this.toggle(false);
     }
   });

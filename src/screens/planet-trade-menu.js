@@ -106,6 +106,10 @@ TradeMenu.prototype.createAmount = function (resource, y, toggle) {
     bgHoverColor: toggle ? this.primary : this.secondary,
     align: 'right'
   });
+
+  resource.onChange(function () {
+    resourceAmount.setText(resource.amount);
+  });
   return resourceAmount;
 };
 

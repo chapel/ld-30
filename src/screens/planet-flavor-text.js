@@ -41,37 +41,37 @@ FlavorText.prototype.create = function () {
     screen.menu.addText({
       text: 'Population',
       x: 5,
-      y: 40,
+      y: 45,
       textColor: this.secondary
     }),
     screen.menu.addText({
       text: utils.formatNumber(screen.planet.population),
       x: 5,
-      y: 50,
+      y: 55,
       textColor: this.primary
     }),
     screen.menu.addText({
       text: 'Main Export',
       x: 5,
-      y: 60,
+      y: 70,
       textColor: this.secondary
     }),
     screen.menu.addText({
       text: screen.planet.mainExport.name,
       x: 5,
-      y: 70,
+      y: 80,
       textColor: this.primary
     }),
     screen.menu.addText({
       text: 'Main Import',
       x: 5,
-      y: 80,
+      y: 95,
       textColor: this.secondary
     }),
     screen.menu.addText({
       text: screen.planet.mainImport.name,
       x: 5,
-      y: 90,
+      y: 105,
       textColor: this.primary
     })
   ]);

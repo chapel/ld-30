@@ -1,5 +1,7 @@
 'use strict';
 
+var utils = require('../utils');
+
 function Resource(options) {
   this.id = options.id;
   this.name = options.name;
@@ -7,6 +9,8 @@ function Resource(options) {
   this.baseValue = options.baseValue;
   this.valueWeight = options.valueWeight || 1;
   this.amount = options.amount || 1;
+
+  this.events = [];
 }
 
 Resource.prototype.value = function () {
@@ -19,10 +23,24 @@ Resource.prototype.weight = function (valueWeight) {
 
 Resource.prototype.add = function (amount) {
   this.amount += amount;
+  this.triggerChange();
 };
 
 Resource.prototype.subtract = function (amount) {
   this.add(-amount);
+  this.triggerChange();
+};
+
+Resource.prototype.onChange = function (handler, context) {
+  this.events.push({
+    trigger: utils.bind(context || this, handler)
+  });
+};
+
+Resource.prototype.triggerChange = function () {
+  for (var i = 0, len = this.events.length; i < len; i += 1) {
+    this.events[i].trigger();
+  }
 };
 
 Resource.prototype.totalValue = function () {
